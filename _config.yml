@@ -1,0 +1,38 @@
+title: dratools
+description: DDBJ DRA toolkit
+lang: ja
+theme: minima
+
+plugins:
+  - jekyll-optional-front-matter
+  - jekyll-titles-from-headings
+
+header_pages:
+  - docs/usage.md
+  - docs/environment.md
+  - docs/design.md
+  - docs/development.md
+
+defaults:
+  - scope:
+      path: ""
+      type: pages
+    values:
+      layout: page
+  - scope:
+      path: README.md
+    values:
+      permalink: /
+
+exclude:
+  - bin/
+  - Gemfile
+  - Gemfile.lock
+  - ID.md
+  - lib/
+  - pkg/
+  - qbix/
+  - Rakefile
+  - test/
+  - dratools.gemspec
+  - ".*"

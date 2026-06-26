@@ -1,0 +1,42 @@
+AllCops:
+  NewCops: enable
+  SuggestExtensions: false
+  TargetRubyVersion: 3.0
+  Exclude:
+    - pkg/**/*
+
+Metrics/AbcSize:
+  Max: 35
+
+Metrics/ClassLength:
+  Max: 200
+  Exclude:
+    - test/**/*
+
+Metrics/CyclomaticComplexity:
+  Max: 9
+
+Metrics/MethodLength:
+  Max: 35
+  Exclude:
+    - test/**/*
+
+Metrics/ParameterLists:
+  Max: 6
+
+Metrics/PerceivedComplexity:
+  Max: 10
+
+Naming/PredicateMethod:
+  Exclude:
+    - test/**/*
+
+Naming/RescuedExceptionsVariableName:
+  PreferredName: error
+
+Layout/LineLength:
+  Max: 100
+
+Metrics/BlockLength:
+  Exclude:
+    - test/**/*
