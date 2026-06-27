@@ -21,6 +21,11 @@ module Dratools
     PROBE_BYTE_RANGE = '0-0'
     SINGLE_ATTEMPT_COUNT = 1
 
+    # curl probe:
+    # --location はリダイレクトを辿る。DDBJ の URL は別ホストへ転送されることがある。
+    # --fail は HTTP エラーを成功扱いにしない。
+    # --silent と --show-error は進捗を消しつつ、失敗理由だけ表示する。
+    # --range 0-0 は巨大ファイル本体を落とさず、先頭 1 byte だけ取得して到達性を見る。
     CURL_PROBE_OPTIONS = ['--location', '--fail', '--silent', '--show-error', '--range'].freeze
     CURL_TIMEOUT_OPTION = '--max-time'
     CURL_CONNECT_TIMEOUT_OPTION = '--connect-timeout'
@@ -28,8 +33,15 @@ module Dratools
     CURL_SPEED_TIME_OPTION = '--speed-time'
     CURL_RETRY_OPTION = '--retry'
     CURL_OUTPUT_OPTION = '--output'
+    # curl download:
+    # --continue-at - は既存の部分ファイルがあれば続きから再開する。
+    # 総時間の上限は付けない。数十 GB のファイルでは正常でも長時間かかるため。
+    # 代わりに接続タイムアウト、低速状態の検知、リトライを download_url で追加する。
     CURL_DOWNLOAD_OPTIONS = ['--location', '--fail', '--continue-at', '-'].freeze
 
+    # wget probe:
+    # --spider はファイルを保存せず、URL が取得可能かだけ確認する。
+    # --timeout と --tries=1 は短時間の疎通確認で待ち続けないために付ける。
     WGET_PROBE_OPTIONS = ['--spider'].freeze
     WGET_TIMEOUT_OPTION = '--timeout'
     WGET_CONNECT_TIMEOUT_OPTION = '--connect-timeout'
@@ -66,6 +78,8 @@ module Dratools
       tool = available_command || raise(CommandError, COMMAND_NOT_FOUND_MESSAGE)
       command =
         if File.basename(tool) == CURL_COMMAND
+          # curl の低速検知は「指定秒数のあいだ指定速度を下回ったら失敗」。
+          # ネットワークが完全に切れず低速で固まるケースを、総時間制限なしで検出する。
           [tool, *CURL_DOWNLOAD_OPTIONS,
            CURL_CONNECT_TIMEOUT_OPTION, Config.download_connect_timeout_seconds.to_s,
            CURL_SPEED_LIMIT_OPTION, Config.download_stall_speed_bytes_per_second.to_s,
@@ -73,6 +87,8 @@ module Dratools
            CURL_RETRY_OPTION, Config.download_retry_count.to_s,
            CURL_OUTPUT_OPTION, output_path, url]
         else
+          # wget では --read-timeout を失速検知に近い意味で使う。
+          # --continue は部分ファイルの続きから再開し、--output-document は保存先を固定する。
           [tool, WGET_CONTINUE_OPTION,
            "#{WGET_CONNECT_TIMEOUT_OPTION}=#{Config.download_connect_timeout_seconds}",
            "#{WGET_READ_TIMEOUT_OPTION}=#{Config.download_stall_timeout_seconds}",
