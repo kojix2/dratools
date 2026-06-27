@@ -1,6 +1,7 @@
 # dratools
 
 [![CI](https://github.com/kojix2/dratools/actions/workflows/ci.yml/badge.svg)](https://github.com/kojix2/dratools/actions/workflows/ci.yml)
+[![Gem Version](https://badge.fury.io/rb/dratools.svg)](https://badge.fury.io/rb/dratools)
 [![Lines of Code](https://img.shields.io/endpoint?url=https%3A%2F%2Ftokei.kojix2.net%2Fbadge%2Fgithub%2Fkojix2%2Fdratools%2Flines)](https://tokei.kojix2.net/github/kojix2/dratools)
 
 [dratools](https://github.com/kojix2/dratools) は、日本国内の [DDBJ](https://www.ddbj.nig.ac.jp) からゲノムデータをダウンロードするためのツールです。
