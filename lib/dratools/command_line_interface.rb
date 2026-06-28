@@ -2,7 +2,9 @@
 
 require_relative 'version'
 require_relative 'accession_resolver'
+require_relative 'ddbj_resource_client'
 require_relative 'download_service'
+require_relative 'progress_reporter'
 require_relative 'commands/url_command'
 require_relative 'commands/get_command'
 require_relative 'commands/probe_command'
@@ -67,18 +69,22 @@ module Dratools
 
     def initialize(
       argv,
-      resolver: AccessionResolver.new,
+      resolver: nil,
       downloader: DownloadService.new,
       stdout: $stdout,
       stderr: $stderr,
       stdin: $stdin
     )
       @argv = argv
-      @resolver = resolver
-      @downloader = downloader
       @stdout = stdout
       @stderr = stderr
       @stdin = stdin
+      @progress = ProgressReporter.new(
+        io: stderr,
+        enabled: interactive?(stderr)
+      )
+      @resolver = resolver || default_resolver
+      @downloader = downloader
     end
 
     def run
@@ -108,13 +114,23 @@ module Dratools
         @argv.drop(1),
         resolver: @resolver,
         downloader: @downloader,
-        stdout: @stdout,
-        stderr: @stderr,
+        stdout: @progress.clearing_io(@stdout),
+        stderr: @progress.clearing_io,
         stdin: @stdin
       ).run
+    ensure
+      @progress.finish
     end
 
     private
+
+    def default_resolver
+      AccessionResolver.new(client: DdbjResourceClient.new(progress: @progress))
+    end
+
+    def interactive?(io)
+      io.respond_to?(:tty?) && io.tty?
+    end
 
     def print_help(stream)
       stream.puts "Usage: #{COMMAND_NAME} <command> [options] [ACCESSION ...]"

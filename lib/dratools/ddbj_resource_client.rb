@@ -8,6 +8,7 @@ require 'uri'
 require_relative 'errors'
 require_relative 'version'
 require_relative 'ddbj_record_fields'
+require_relative 'progress_reporter'
 
 module Dratools
   # DDBJ Search API を呼び出す薄い HTTP クライアント。
@@ -26,17 +27,20 @@ module Dratools
     DEFAULT_READ_TIMEOUT_SECONDS = 30
 
     def initialize(base_url: DDBJ_SEARCH_API_BASE_URL, open_timeout: DEFAULT_OPEN_TIMEOUT_SECONDS,
-                   read_timeout: DEFAULT_READ_TIMEOUT_SECONDS)
+                   read_timeout: DEFAULT_READ_TIMEOUT_SECONDS, progress: ProgressReporter.new)
       @base_url = base_url.delete_suffix('/')
       @open_timeout = open_timeout
       @read_timeout = read_timeout
+      @progress = progress
     end
 
     def fetch_resource_record(type, accession)
+      @progress.report("fetching #{type} #{accession}")
       fetch_json("#{@base_url}/#{ENTRIES_PATH}/#{type}/#{accession}#{ENTRY_RECORD_EXTENSION}")
     end
 
     def fetch_db_links(type, accession, target: nil)
+      @progress.report("linking #{type} #{accession}")
       request_uri = URI("#{@base_url}/#{DBLINK_PATH}/#{type}/#{accession}")
       request_uri.query = URI.encode_www_form(target: target) if target
       fetch_json(request_uri.to_s).fetch(DdbjRecordFields::DB_XREFS_KEY, [])
@@ -59,6 +63,7 @@ module Dratools
     private
 
     def fetch_db_link_counts_chunk(items)
+      @progress.report("counting links (#{items.length})")
       request_url = "#{@base_url}/#{DBLINK_PATH}/counts"
       payload = post_json(request_url, items: items)
       payload.fetch('items', []).to_h do |item|
@@ -67,6 +72,7 @@ module Dratools
     end
 
     def fetch_resource_records_bulk_chunk(type, accessions, include_db_xrefs:)
+      @progress.report("fetching #{type} bulk (#{accessions.length})")
       request_uri = URI("#{@base_url}/#{ENTRIES_PATH}/#{type}/bulk")
       request_uri.query = URI.encode_www_form(includeDbXrefs: include_db_xrefs)
       payload = post_json(request_uri.to_s, ids: accessions)
