@@ -74,6 +74,22 @@ class DownloadCandidateBuilderTest < Minitest::Test
     assert_equal 'https://example.test/DRR000001.sra', downloads.first.url
   end
 
+  def test_ignores_nil_download_url
+    downloads = Dratools::DownloadCandidateBuilder.new.build_from_run_record(
+      'identifier' => 'DRR000001',
+      'downloadUrl' => nil,
+      'distribution' => [
+        {
+          'encodingFormat' => 'SRA',
+          'contentUrl' => 'https://example.test/DRR000001.sra'
+        }
+      ]
+    )
+
+    assert_equal 1, downloads.length
+    assert_equal 'https://example.test/DRR000001.sra', downloads.first.url
+  end
+
   def test_deduplicates_download_candidates_from_both_shapes
     downloads = Dratools::DownloadCandidateBuilder.new.build_from_run_record(
       'identifier' => 'DRR000001',

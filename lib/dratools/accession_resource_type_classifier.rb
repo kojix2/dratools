@@ -11,7 +11,7 @@ module Dratools
     SAMPLE_PREFIXES = /\A[DES]RS\d+\z/
     STUDY_PREFIXES = /\A[DES]RP\d+\z/
     SUBMISSION_PREFIXES = /\A[DES]RA\d+\z/
-    BIOPROJECT_PREFIXES = /\APRJ(?:DA|DB|NA|EB)\d+\z/
+    BIOPROJECT_PREFIXES = /\APRJ[DEN][A-Z]\d+\z/
     BIOSAMPLE_PREFIXES = /\ASAM(?:D|N|EA|EG)?\d+\z/
 
     TYPE_BY_ACCESSION = [

@@ -12,11 +12,17 @@ accession から URL までの流れは次のとおりです。
 
 ```text
 accession
-  -> DDBJ Search resource JSON
+  -> DDBJ Search resource JSON (/resource/{type}/{id}.json)
   -> sra-run record
-  -> downloadUrl
+  -> distribution / downloadUrl
   -> https / ftp URL
 ```
+
+`/resource/{type}/{id}.json` は現在、DDBJ Search の
+`/search/entry/{type}/{id}.json` へリダイレクトされます。dratools はこの
+data endpoint の JSON を使います。DDBJ Search API の `/search/api/...` には
+DBLinks、Bulk、umbrella-tree などの追加機能がありますが、現時点では既定の
+解決経路には使いません。
 
 ## ダウンロード確認
 

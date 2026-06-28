@@ -138,6 +138,36 @@ class AccessionResolverTest < Minitest::Test
     assert_equal ['https://example.test/DRR000002.sra'], downloads.map(&:url)
   end
 
+  def test_resolves_prjea_bioproject_accession
+    client = FakeClient.new(
+      %w[bioproject PRJEA12345] => {
+        'type' => 'bioproject',
+        'accession' => 'PRJEA12345',
+        'dbXrefs' => [
+          {
+            'type' => 'sra-run',
+            'identifier' => 'ERR000001'
+          }
+        ]
+      },
+      %w[sra-run ERR000001] => {
+        'type' => 'sra-run',
+        'accession' => 'ERR000001',
+        'distribution' => [
+          {
+            'encodingFormat' => 'SRA',
+            'contentUrl' => 'https://example.test/ERR000001.sra'
+          }
+        ]
+      }
+    )
+    resolver = Dratools::AccessionResolver.new(client: client)
+
+    downloads = resolver.resolve_downloads('PRJEA12345')
+
+    assert_equal ['https://example.test/ERR000001.sra'], downloads.map(&:url)
+  end
+
   def test_filters_fastq_downloads
     client = FakeClient.new(
       %w[sra-run DRR000001] => {

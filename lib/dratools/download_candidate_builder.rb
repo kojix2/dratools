@@ -24,8 +24,8 @@ module Dratools
     end
 
     def download_items_from(ddbj_record)
-      ddbj_record.fetch(DdbjRecordFields::DOWNLOAD_URL_KEY, []) +
-        ddbj_record.fetch(DdbjRecordFields::DISTRIBUTION_KEY, [])
+      Array(ddbj_record[DdbjRecordFields::DOWNLOAD_URL_KEY]) +
+        Array(ddbj_record[DdbjRecordFields::DISTRIBUTION_KEY])
     end
 
     def build_from_download_item(run_accession, download_item)
