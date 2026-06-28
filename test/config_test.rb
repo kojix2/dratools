@@ -11,10 +11,10 @@ class ConfigTest < Minitest::Test
       'DRATOOLS_SIZE_MAX_DIRECT_RUNS' => nil,
       'DRATOOLS_DOWNLOAD_COMMAND' => nil
     ) do
-      assert_equal 100, Dratools::Config.max_recursive_non_run_xrefs
-      assert_equal 50, Dratools::Config.tree_max_direct_runs
-      assert_equal 50, Dratools::Config.url_max_direct_runs
-      assert_equal 50, Dratools::Config.size_max_direct_runs
+      assert_equal 500, Dratools::Config.max_recursive_non_run_xrefs
+      assert_equal 200, Dratools::Config.tree_max_direct_runs
+      assert_equal 200, Dratools::Config.url_max_direct_runs
+      assert_equal 200, Dratools::Config.size_max_direct_runs
       assert_nil Dratools::Config.download_command
     end
   end

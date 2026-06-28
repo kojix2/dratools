@@ -94,7 +94,8 @@ module Dratools
       accession = record_accession(ddbj_record) || 'record'
       raise InvalidRecordError,
             "#{accession} has #{non_run_xrefs.length} linked non-run records; " \
-            'refine to an experiment/sample accession before run expansion'
+            'refine to an experiment/sample accession before run expansion, ' \
+            "or set #{Config::MAX_RECURSIVE_NON_RUN_XREFS_ENV}=unlimited"
     end
 
     def child_bioprojects(ddbj_record)

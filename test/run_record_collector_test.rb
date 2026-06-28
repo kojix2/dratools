@@ -252,7 +252,7 @@ class RunRecordCollectorTest < Minitest::Test
   def test_rejects_large_recursive_xref_expansion
     client = FakeClient.new({})
     collector = Dratools::RunRecordCollector.new(client: client)
-    xrefs = 101.times.map do |index|
+    xrefs = 501.times.map do |index|
       {
         'type' => 'sra-experiment',
         'identifier' => "ERX#{index}"
@@ -267,7 +267,8 @@ class RunRecordCollectorTest < Minitest::Test
       )
     end
 
-    assert_includes error.message, 'ERP005466 has 101 linked non-run records'
+    assert_includes error.message, 'ERP005466 has 501 linked non-run records'
+    assert_includes error.message, 'DRATOOLS_MAX_RECURSIVE_NON_RUN_XREFS=unlimited'
     assert_empty client.calls
   end
 
@@ -291,6 +292,7 @@ class RunRecordCollectorTest < Minitest::Test
       end
 
       assert_includes error.message, 'ERP_LIMIT has 2 linked non-run records'
+      assert_includes error.message, 'DRATOOLS_MAX_RECURSIVE_NON_RUN_XREFS=unlimited'
     end
   end
 

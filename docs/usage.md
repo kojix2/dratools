@@ -67,7 +67,7 @@ dratools runs PRJNA341783
 dratools runs PRJNA341783 | dratools get -O ~/Downloads
 ```
 
-Study や BioProject には多数の experiment や sample が含まれることがあります。`runs` はこれらを無制限には辿りません。上限を超えるとエラーで止まります。run へ直接リンクがある場合は、100 件を超えても制限の対象外です。レコードが大きい場合は、先に `tree` や `meta` で構造を確認してください。experiment や sample に絞ってから `runs` を使ってください。
+Study や BioProject には多数の experiment や sample が含まれることがあります。`runs` はこれらを無制限には辿りません。上限を超えるとエラーで止まります。run へ直接リンクがある場合は、500 件を超えても制限の対象外です。レコードが大きい場合は、先に `tree` や `meta` で構造を確認してください。experiment や sample に絞ってから `runs` を使ってください。
 
 ## 合計サイズを確認する (`size`)
 

@@ -216,14 +216,15 @@ class CommandLineInterfaceTest < Minitest::Test
   end
 
   def test_url_rejects_large_direct_run_expansion
-    resolver = FakeResolver.new(direct_run_counts: { 'PRJNA1' => 51 })
+    resolver = FakeResolver.new(direct_run_counts: { 'PRJNA1' => 201 })
 
     exit_status, stdout, stderr = run_cli(%w[url --tsv PRJNA1], resolver: resolver)
 
     assert_equal 1, exit_status
     assert_empty stdout
-    assert_includes stderr, 'PRJNA1 has 51 direct runs'
-    assert_includes stderr, 'url expands at most 50 direct runs from one parent accession'
+    assert_includes stderr, 'PRJNA1 has 201 direct runs'
+    assert_includes stderr, 'url expands at most 200 direct runs from one parent accession'
+    assert_includes stderr, 'DRATOOLS_URL_MAX_DIRECT_RUNS=unlimited'
     assert_equal ['PRJNA1'], resolver.count_calls
     assert_empty resolver.fetch_calls
     assert_empty resolver.calls
@@ -231,11 +232,11 @@ class CommandLineInterfaceTest < Minitest::Test
 
   def test_url_direct_run_limit_uses_environment
     resolver = FakeResolver.new(
-      direct_run_counts: { 'PRJNA1' => 51 },
+      direct_run_counts: { 'PRJNA1' => 201 },
       results: { 'PRJNA1' => [download_for('SRR0')] }
     )
 
-    with_env('DRATOOLS_URL_MAX_DIRECT_RUNS' => '51') do
+    with_env('DRATOOLS_URL_MAX_DIRECT_RUNS' => '201') do
       exit_status, stdout, stderr = run_cli(%w[url --tsv PRJNA1], resolver: resolver)
 
       assert_equal 0, exit_status
@@ -468,14 +469,15 @@ class CommandLineInterfaceTest < Minitest::Test
   end
 
   def test_size_rejects_large_direct_run_expansion
-    resolver = FakeResolver.new(direct_run_counts: { 'PRJNA1' => 51 })
+    resolver = FakeResolver.new(direct_run_counts: { 'PRJNA1' => 201 })
 
     exit_status, stdout, stderr = run_cli(%w[size PRJNA1], resolver: resolver)
 
     assert_equal 1, exit_status
     assert_empty stdout
-    assert_includes stderr, 'PRJNA1 has 51 direct runs'
-    assert_includes stderr, 'at most 50 direct runs from one parent accession'
+    assert_includes stderr, 'PRJNA1 has 201 direct runs'
+    assert_includes stderr, 'at most 200 direct runs from one parent accession'
+    assert_includes stderr, 'DRATOOLS_SIZE_MAX_DIRECT_RUNS=unlimited'
     assert_equal ['PRJNA1'], resolver.count_calls
     assert_empty resolver.fetch_calls
     assert_empty resolver.calls
@@ -483,11 +485,11 @@ class CommandLineInterfaceTest < Minitest::Test
 
   def test_size_direct_run_limit_uses_environment
     resolver = FakeResolver.new(
-      direct_run_counts: { 'PRJNA1' => 51 },
+      direct_run_counts: { 'PRJNA1' => 201 },
       results: { 'PRJNA1' => [download_for('SRR0', size: 1024)] }
     )
 
-    with_env('DRATOOLS_SIZE_MAX_DIRECT_RUNS' => '51') do
+    with_env('DRATOOLS_SIZE_MAX_DIRECT_RUNS' => '201') do
       exit_status, stdout, stderr = run_cli(%w[size PRJNA1], resolver: resolver)
 
       assert_equal 0, exit_status

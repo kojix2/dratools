@@ -6,10 +6,10 @@
 
 | 環境変数 | 既定値 | 役割 |
 | --- | ---: | --- |
-| `DRATOOLS_MAX_RECURSIVE_NON_RUN_XREFS` | `100` | `runs` などが direct run を持たない親レコードから experiment/sample/study などの非 run レコードを再帰的に辿る最大件数 |
-| `DRATOOLS_TREE_MAX_DIRECT_RUNS` | `50` | `tree` が direct run レコードを個別取得して URL まで展開する最大 run 件数。超えた場合は件数だけを要約表示 |
-| `DRATOOLS_URL_MAX_DIRECT_RUNS` | `50` | `url` が 1 つの親 accession から direct run を暗黙展開して URL を解決する最大 run 件数 |
-| `DRATOOLS_SIZE_MAX_DIRECT_RUNS` | `50` | `size` が 1 つの親 accession から direct run を暗黙展開して HEAD する最大 run 件数 |
+| `DRATOOLS_MAX_RECURSIVE_NON_RUN_XREFS` | `500` | `runs` などが direct run を持たない親レコードから experiment/sample/study などの非 run レコードを再帰的に辿る最大件数 |
+| `DRATOOLS_TREE_MAX_DIRECT_RUNS` | `200` | `tree` が direct run レコードを個別取得して URL まで展開する最大 run 件数。超えた場合は件数だけを要約表示 |
+| `DRATOOLS_URL_MAX_DIRECT_RUNS` | `200` | `url` が 1 つの親 accession から direct run を暗黙展開して URL を解決する最大 run 件数 |
+| `DRATOOLS_SIZE_MAX_DIRECT_RUNS` | `200` | `size` が 1 つの親 accession から direct run を暗黙展開して HEAD する最大 run 件数 |
 
 `unlimited` が使えるのは、上の 4 つの上限設定だけです。
 
@@ -32,24 +32,27 @@
 
 ## 例
 
-`tree` で 200 件まで URL を展開する:
+`tree` の direct run 展開の既定値は 200 件です。
+500 件に上げる例:
 
 ```sh
-DRATOOLS_TREE_MAX_DIRECT_RUNS=200 dratools tree PRJDB12740
+DRATOOLS_TREE_MAX_DIRECT_RUNS=500 dratools tree PRJDB12740
 ```
 
 この値を小さくすると、展開しない direct run は要約だけを表示します。
 
-`size` で 100 件まで direct run を暗黙展開する:
+`size` の direct run 暗黙展開の既定値は 200 件です。
+500 件に上げる例:
 
 ```sh
-DRATOOLS_SIZE_MAX_DIRECT_RUNS=100 dratools size PRJDB12740
+DRATOOLS_SIZE_MAX_DIRECT_RUNS=500 dratools size PRJDB12740
 ```
 
-`url` で 100 件まで direct run を暗黙展開する:
+`url` の direct run 暗黙展開の既定値は 200 件です。
+500 件に上げる例:
 
 ```sh
-DRATOOLS_URL_MAX_DIRECT_RUNS=100 dratools url --tsv PRJDB12740
+DRATOOLS_URL_MAX_DIRECT_RUNS=500 dratools url --tsv PRJDB12740
 ```
 
 再帰的な非 run 展開の上限を外す:
@@ -83,6 +86,8 @@ DRATOOLS_DOWNLOAD_COMMAND=aria2c dratools get -O ~/Downloads DRR000001
 
 これらは上級の設定です。上限を大きくすると、DDBJ Search API へのリクエスト数が増えます。`size` の HTTP `HEAD` の回数も増えます。
 
-`DRATOOLS_URL_MAX_DIRECT_RUNS` と `DRATOOLS_SIZE_MAX_DIRECT_RUNS` は direct run 数の上限です。experiment や sample や study を経由して見つかる run の総数は制限しません。まず `meta` や `tree` で構造を確認してください。必要なら `runs` で accession を絞ってください。その後で重い操作を実行してください。
+`DRATOOLS_URL_MAX_DIRECT_RUNS` と `DRATOOLS_SIZE_MAX_DIRECT_RUNS` は direct run 数の上限です。experiment や sample や study を経由して見つかる run の総数は制限しません。`*_MAX_DIRECT_RUNS=unlimited` だけでは `DRATOOLS_MAX_RECURSIVE_NON_RUN_XREFS` の上限は外れません。
+
+まず `meta` や `tree` で構造を確認してください。必要なら `runs` で accession を絞ってください。その後で重い操作を実行してください。
 
 ダウンロード用の設定を小さくしすぎる場合を考えます。正常なサーバーでも、開始前や転送中に失敗します。短い値は動作検証やネットワーク問題の切り分けに使ってください。通常のダウンロードでは既定値を使ってください。

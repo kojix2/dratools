@@ -157,7 +157,8 @@ module Dratools
         raise InvalidRecordError,
               "#{accession.to_s.upcase} has #{direct_run_count} direct runs; " \
               "size expands at most #{max_direct_runs} direct runs from one parent accession. " \
-              "Use `#{Dratools::NAME} runs #{accession}` and pass narrower accessions."
+              "Use `#{Dratools::NAME} runs #{accession}` and pass narrower accessions, " \
+              "or set #{Config::SIZE_MAX_DIRECT_RUNS_ENV}=unlimited."
       end
     end
   end
