@@ -15,13 +15,18 @@ class RunRecordCollectorTest < Minitest::Test
       @calls << [type, accession]
       @records.fetch([type, accession])
     end
+
+    def fetch_resource_records_bulk(type, accessions, include_db_xrefs: false)
+      @calls << ['bulk', type, accessions, include_db_xrefs]
+      accessions.to_h { |accession| [accession, @records.fetch([type, accession])] }
+    end
   end
 
-  def test_collects_run_records_from_url_xrefs
+  def test_collects_run_records_from_identifier_xrefs
     run_record = {
       'type' => 'sra-run',
       'accession' => 'DRR000001',
-      'downloadUrl' => []
+      'distribution' => []
     }
     client = FakeClient.new(%w[sra-run DRR000001] => run_record)
     collector = Dratools::RunRecordCollector.new(client: client)
@@ -31,13 +36,13 @@ class RunRecordCollectorTest < Minitest::Test
       'dbXrefs' => [
         {
           'type' => 'sra-run',
-          'url' => 'https://ddbj.nig.ac.jp/search/entry/sra-run/DRR000001.json'
+          'identifier' => 'DRR000001'
         }
       ]
     )
 
     assert_equal [run_record], run_records
-    assert_equal [%w[sra-run DRR000001]], client.calls
+    assert_equal [['bulk', 'sra-run', %w[DRR000001], false]], client.calls
   end
 
   def test_collects_run_records_from_identifier_xrefs_once
@@ -58,7 +63,38 @@ class RunRecordCollectorTest < Minitest::Test
     )
 
     assert_equal [run_record], run_records
-    assert_equal [%w[sra-run DRR000001]], client.calls
+    assert_equal [['bulk', 'sra-run', %w[DRR000001], false]], client.calls
+  end
+
+  def test_collects_direct_run_records_with_bulk_fetch
+    run_records = {
+      %w[sra-run DRR000001] => {
+        'type' => 'sra-run',
+        'identifier' => 'DRR000001',
+        'distribution' => []
+      },
+      %w[sra-run DRR000002] => {
+        'type' => 'sra-run',
+        'identifier' => 'DRR000002',
+        'distribution' => []
+      }
+    }
+    client = FakeClient.new(run_records)
+    collector = Dratools::RunRecordCollector.new(client: client)
+
+    records = collector.collect_run_records(
+      'type' => 'bioproject',
+      'dbXrefs' => [
+        { 'type' => 'sra-run', 'identifier' => 'DRR000001' },
+        { 'type' => 'sra-run', 'identifier' => 'DRR000002' }
+      ]
+    )
+
+    identifiers = records.map { |record| record['identifier'] }
+    assert_equal %w[DRR000001 DRR000002], identifiers
+    assert_equal [
+      ['bulk', 'sra-run', %w[DRR000001 DRR000002], false]
+    ], client.calls
   end
 
   def test_collects_run_records_from_bioproject_with_json_distribution
@@ -88,40 +124,13 @@ class RunRecordCollectorTest < Minitest::Test
       'dbXrefs' => [
         {
           'type' => 'sra-run',
-          'identifier' => 'SRR4158183',
-          'url' => 'https://ddbj.nig.ac.jp/search/entry/sra-run/SRR4158183'
+          'identifier' => 'SRR4158183'
         }
       ]
     )
 
     assert_equal [run_record], run_records
-    assert_equal [%w[sra-run SRR4158183]], client.calls
-  end
-
-  def test_explicit_non_run_type_is_not_treated_as_run_by_download_url
-    run_record = {
-      'type' => 'sra-run',
-      'identifier' => 'DRR000001',
-      'distribution' => []
-    }
-    client = FakeClient.new(%w[sra-run DRR000001] => run_record)
-    collector = Dratools::RunRecordCollector.new(client: client)
-
-    run_records = collector.collect_run_records(
-      'type' => 'bioproject',
-      'identifier' => 'PRJDB1',
-      'downloadUrl' => [],
-      'dbXrefs' => [
-        {
-          'type' => 'sra-run',
-          'identifier' => 'DRR000001',
-          'url' => 'https://ddbj.nig.ac.jp/search/entry/sra-run/DRR000001'
-        }
-      ]
-    )
-
-    assert_equal [run_record], run_records
-    assert_equal [%w[sra-run DRR000001]], client.calls
+    assert_equal [['bulk', 'sra-run', %w[SRR4158183], false]], client.calls
   end
 
   def test_recursively_collects_run_records_when_direct_run_xrefs_are_absent
@@ -136,8 +145,7 @@ class RunRecordCollectorTest < Minitest::Test
       'dbXrefs' => [
         {
           'type' => 'sra-run',
-          'identifier' => 'SRR4158183',
-          'url' => 'https://ddbj.nig.ac.jp/search/entry/sra-run/SRR4158183'
+          'identifier' => 'SRR4158183'
         }
       ]
     }
@@ -152,8 +160,7 @@ class RunRecordCollectorTest < Minitest::Test
       'dbXrefs' => [
         {
           'type' => 'sra-experiment',
-          'identifier' => 'SRX2134150',
-          'url' => 'https://ddbj.nig.ac.jp/search/entry/sra-experiment/SRX2134150'
+          'identifier' => 'SRX2134150'
         }
       ]
     )
@@ -161,7 +168,7 @@ class RunRecordCollectorTest < Minitest::Test
     assert_equal [run_record], run_records
     assert_equal [
       %w[sra-experiment SRX2134150],
-      %w[sra-run SRR4158183]
+      ['bulk', 'sra-run', %w[SRR4158183], false]
     ], client.calls
   end
 
@@ -179,19 +186,17 @@ class RunRecordCollectorTest < Minitest::Test
       'dbXrefs' => [
         {
           'type' => 'sra-experiment',
-          'identifier' => 'SRX2134150',
-          'url' => 'https://ddbj.nig.ac.jp/search/entry/sra-experiment/SRX2134150'
+          'identifier' => 'SRX2134150'
         },
         {
           'type' => 'sra-run',
-          'identifier' => 'SRR4158183',
-          'url' => 'https://ddbj.nig.ac.jp/search/entry/sra-run/SRR4158183'
+          'identifier' => 'SRR4158183'
         }
       ]
     )
 
     assert_equal [run_record], run_records
-    assert_equal [%w[sra-run SRR4158183]], client.calls
+    assert_equal [['bulk', 'sra-run', %w[SRR4158183], false]], client.calls
   end
 
   def test_rejects_large_recursive_xref_expansion
@@ -200,8 +205,7 @@ class RunRecordCollectorTest < Minitest::Test
     xrefs = 101.times.map do |index|
       {
         'type' => 'sra-experiment',
-        'identifier' => "ERX#{index}",
-        'url' => "https://ddbj.nig.ac.jp/search/entry/sra-experiment/ERX#{index}"
+        'identifier' => "ERX#{index}"
       }
     end
 
@@ -223,8 +227,7 @@ class RunRecordCollectorTest < Minitest::Test
     xrefs = 2.times.map do |index|
       {
         'type' => 'sra-experiment',
-        'identifier' => "ERX#{index}",
-        'url' => "https://ddbj.nig.ac.jp/search/entry/sra-experiment/ERX#{index}"
+        'identifier' => "ERX#{index}"
       }
     end
 
@@ -259,8 +262,7 @@ class RunRecordCollectorTest < Minitest::Test
       accession = "SRR#{index}"
       {
         'type' => 'sra-run',
-        'identifier' => accession,
-        'url' => "https://ddbj.nig.ac.jp/search/entry/sra-run/#{accession}"
+        'identifier' => accession
       }
     end
 
@@ -271,7 +273,9 @@ class RunRecordCollectorTest < Minitest::Test
     )
 
     assert_equal 101, records.length
-    assert_equal 101, client.calls.length
+    assert_equal [
+      ['bulk', 'sra-run', xrefs.map { |xref| xref['identifier'] }, false]
+    ], client.calls
   end
 
   def test_can_return_large_direct_run_xrefs_without_fetching_records
@@ -281,8 +285,7 @@ class RunRecordCollectorTest < Minitest::Test
       accession = "SRR#{index}"
       {
         'type' => 'sra-run',
-        'identifier' => accession,
-        'url' => "https://ddbj.nig.ac.jp/search/entry/sra-run/#{accession}"
+        'identifier' => accession
       }
     end
 
@@ -313,8 +316,7 @@ class RunRecordCollectorTest < Minitest::Test
       'dbXrefs' => [
         {
           'type' => 'sra-run',
-          'identifier' => 'SRR17168265',
-          'url' => 'https://ddbj.nig.ac.jp/search/entry/sra-run/SRR17168265'
+          'identifier' => 'SRR17168265'
         }
       ]
     }
@@ -330,15 +332,13 @@ class RunRecordCollectorTest < Minitest::Test
       'childBioProjects' => [
         {
           'type' => 'bioproject',
-          'identifier' => 'PRJNA341783',
-          'url' => 'https://ddbj.nig.ac.jp/search/entry/bioproject/PRJNA341783'
+          'identifier' => 'PRJNA341783'
         }
       ],
       'dbXrefs' => [
         {
           'type' => 'geo',
-          'identifier' => 'GSE190459',
-          'url' => 'https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE190459'
+          'identifier' => 'GSE190459'
         }
       ]
     )
@@ -346,7 +346,7 @@ class RunRecordCollectorTest < Minitest::Test
     assert_equal [run_record], run_records
     assert_equal [
       %w[bioproject PRJNA341783],
-      %w[sra-run SRR17168265]
+      ['bulk', 'sra-run', %w[SRR17168265], false]
     ], client.calls
   end
 
@@ -365,8 +365,7 @@ class RunRecordCollectorTest < Minitest::Test
                                'dbXrefs' => [
                                  {
                                    'type' => 'sra-run',
-                                   'identifier' => 'SRR17168265',
-                                   'url' => 'https://ddbj.nig.ac.jp/search/entry/sra-run/SRR17168265'
+                                   'identifier' => 'SRR17168265'
                                  }
                                ]
                              })
@@ -379,8 +378,8 @@ class RunRecordCollectorTest < Minitest::Test
 
   def test_explore_can_keep_fetch_errors_as_nodes
     client = Class.new do
-      def fetch_resource_record(_type, _accession)
-        raise Dratools::NetworkError, 'HTTP 500'
+      def fetch_resource_records_bulk(_type, accessions, include_db_xrefs: false) # rubocop:disable Lint/UnusedMethodArgument
+        accessions.to_h { |accession| [accession, nil] }
       end
     end.new
     collector = Dratools::RunRecordCollector.new(client: client)
@@ -392,8 +391,7 @@ class RunRecordCollectorTest < Minitest::Test
         'dbXrefs' => [
           {
             'type' => 'sra-run',
-            'identifier' => 'SRR1',
-            'url' => 'https://ddbj.nig.ac.jp/search/entry/sra-run/SRR1'
+            'identifier' => 'SRR1'
           }
         ]
       },
@@ -401,6 +399,6 @@ class RunRecordCollectorTest < Minitest::Test
     )
 
     assert_equal 'SRR1', tree.children.first.accession
-    assert_equal 'HTTP 500', tree.children.first.error
+    assert_equal 'not found: SRR1', tree.children.first.error
   end
 end

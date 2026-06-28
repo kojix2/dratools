@@ -82,7 +82,7 @@ printf 'DRR000001\nDRR000002\n' | dratools get -O ~/Downloads
 dratools probe DRR000001                          # URL の到達性だけ確認する
 dratools url --json DRR000001                     # URL 情報を JSON で表示する
 dratools url --tsv DRR000001                      # run/type/url/size/md5 を TAB 区切りで
-dratools meta --json DRR000001                    # resource JSON を表示する
+dratools meta --json DRR000001                    # entry JSON を表示する
 dratools runs PRJNA341783 | dratools get -O ~/Downloads # run 一覧をダウンロードへ渡す
 dratools size --bytes PRJNA341783                 # 合計サイズをバイト数で表示する
 dratools size --per-run DRX000001                 # 親 accession を run ごとに集計する

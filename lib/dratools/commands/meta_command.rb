@@ -6,7 +6,7 @@ require_relative 'base_command'
 
 module Dratools
   module Commands
-    # DDBJ resource JSON のメタ情報を要約表示する。
+    # DDBJ Search entry JSON のメタ情報を要約表示する。
     class MetaCommand < BaseCommand
       LABEL_WIDTH = 18
 
@@ -21,7 +21,7 @@ module Dratools
       end
 
       def configure_parser(parser)
-        parser.on('--json', '生の resource JSON を整形して表示する') { @options[:json] = true }
+        parser.on('--json', '生の entry JSON を整形して表示する') { @options[:json] = true }
       end
 
       def usage_examples

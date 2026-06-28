@@ -140,19 +140,20 @@ module Dratools
 
       def fetch_record_for_size(accession)
         max_direct_runs = Config.size_max_direct_runs
-        ddbj_record = @resolver.fetch_record_for(accession)
-        validate_direct_run_expansion_size!(accession, ddbj_record, max_direct_runs)
-        ddbj_record
+        validate_direct_run_expansion_count!(accession, max_direct_runs)
+        @resolver.fetch_record_for(accession)
       end
 
-      def validate_direct_run_expansion_size!(accession, ddbj_record, max_direct_runs)
+      def validate_direct_run_expansion_count!(accession, max_direct_runs)
         return unless max_direct_runs
 
-        direct_run_count = ddbj_record.fetch(DdbjRecordFields::DB_XREFS_KEY, []).count do |xref|
-          xref[DdbjRecordFields::TYPE_KEY] == DdbjRecordFields::SRA_RUN_RESOURCE_TYPE
-        end
+        direct_run_count = @resolver.direct_run_count_for(accession)
         return if direct_run_count <= max_direct_runs
 
+        raise_direct_run_limit_error(accession, direct_run_count, max_direct_runs)
+      end
+
+      def raise_direct_run_limit_error(accession, direct_run_count, max_direct_runs)
         raise InvalidRecordError,
               "#{accession.to_s.upcase} has #{direct_run_count} direct runs; " \
               "size expands at most #{max_direct_runs} direct runs from one parent accession. " \

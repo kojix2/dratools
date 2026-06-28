@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Dratools
-  # DDBJ Search resource JSON で使う resource type とキー名をまとめる。
+  # DDBJ Search entry JSON で使う resource type とキー名をまとめる。
   module DdbjRecordFields
     SRA_RUN_RESOURCE_TYPE = 'sra-run'
     SRA_EXPERIMENT_RESOURCE_TYPE = 'sra-experiment'
@@ -18,18 +18,13 @@ module Dratools
     DB_XREFS_KEY = 'dbXrefs'
     CHILD_BIOPROJECTS_KEY = 'childBioProjects'
     TYPE_KEY = 'type'
-    URL_KEY = 'url'
-    FTP_URL_KEY = 'ftpUrl'
     ID_KEY = 'id'
     IDENTIFIER_KEY = 'identifier'
     ACCESSION_KEY = 'accession'
     PRIMARY_ID_KEY = 'primaryId'
-    DOWNLOAD_URL_KEY = 'downloadUrl'
     DISTRIBUTION_KEY = 'distribution'
     CONTENT_URL_KEY = 'contentUrl'
     CONTENT_SIZE_KEY = 'contentSize'
-    SIZE_KEY = 'size'
-    FILE_SIZE_KEY = 'fileSize'
     MD5_KEY = 'md5'
     MD5_SUM_KEY = 'md5sum'
     ENCODING_FORMAT_KEY = 'encodingFormat'

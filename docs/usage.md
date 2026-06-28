@@ -35,7 +35,7 @@ bundle exec rake install
 
 ## メタ情報を表示する (`meta`)
 
-`meta` は DDBJ Search の resource JSON を要約して表示します。
+`meta` は DDBJ Search の entry JSON を要約して表示します。
 
 ```sh
 dratools meta DRR300000

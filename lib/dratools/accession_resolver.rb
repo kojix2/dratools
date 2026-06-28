@@ -72,11 +72,38 @@ module Dratools
       @client.fetch_resource_record(resource_type, accession)
     end
 
+    def direct_run_accessions_for(accession)
+      accession = accession.to_s.upcase
+      resource_type = resource_type_for(accession)
+      return [accession] if resource_type == DdbjRecordFields::SRA_RUN_RESOURCE_TYPE
+
+      @client.fetch_db_links(
+        resource_type,
+        accession,
+        target: DdbjRecordFields::SRA_RUN_RESOURCE_TYPE
+      ).filter_map { |xref| xref_accession(xref) }
+    end
+
+    def direct_run_count_for(accession)
+      accession = accession.to_s.upcase
+      resource_type = resource_type_for(accession)
+      return 1 if resource_type == DdbjRecordFields::SRA_RUN_RESOURCE_TYPE
+
+      counts = @client.fetch_db_link_counts([{ type: resource_type, id: accession }])
+      counts.fetch([resource_type, accession], {}).fetch(DdbjRecordFields::SRA_RUN_RESOURCE_TYPE, 0)
+    end
+
     def resource_type_for(accession)
       @resource_type_classifier.resource_type_for(accession)
     end
 
     private
+
+    def xref_accession(xref)
+      xref[DdbjRecordFields::IDENTIFIER_KEY] ||
+        xref[DdbjRecordFields::ID_KEY] ||
+        xref[DdbjRecordFields::ACCESSION_KEY]
+    end
 
     def attach_downloads(node, file_type:)
       if node.run? && node.record

@@ -6,8 +6,6 @@ module Dratools
   module Commands
     # accession を run accession のフラットな一覧に展開する。
     class RunsCommand < BaseCommand
-      XREF_URL_PATTERN = %r{/(?:resource|search/entry)/sra-run/([^/?#.]+)}
-
       private
 
       def command_name
@@ -41,29 +39,7 @@ module Dratools
       end
 
       def direct_run_accessions_for(accession)
-        record = @resolver.fetch_record_for(accession)
-        if record[DdbjRecordFields::TYPE_KEY] == DdbjRecordFields::SRA_RUN_RESOURCE_TYPE
-          return [record_accession(record)].compact
-        end
-
-        record.fetch(DdbjRecordFields::DB_XREFS_KEY, []).filter_map do |xref|
-          next unless xref[DdbjRecordFields::TYPE_KEY] == DdbjRecordFields::SRA_RUN_RESOURCE_TYPE
-
-          xref[DdbjRecordFields::IDENTIFIER_KEY] ||
-            xref[DdbjRecordFields::ID_KEY] ||
-            run_accession_from_url(xref[DdbjRecordFields::URL_KEY])
-        end
-      end
-
-      def record_accession(record)
-        record[DdbjRecordFields::ACCESSION_KEY] ||
-          record[DdbjRecordFields::IDENTIFIER_KEY] ||
-          record[DdbjRecordFields::ID_KEY] ||
-          record[DdbjRecordFields::PRIMARY_ID_KEY]
-      end
-
-      def run_accession_from_url(url)
-        url.to_s.match(XREF_URL_PATTERN)&.[](1)
+        @resolver.direct_run_accessions_for(accession)
       end
     end
   end

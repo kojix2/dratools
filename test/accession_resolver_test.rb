@@ -6,14 +6,34 @@ class AccessionResolverTest < Minitest::Test
   class FakeClient
     attr_reader :calls
 
-    def initialize(records)
-      @records = records
+    def initialize(records = {}, db_links: {}, db_link_counts: {}, **keyword_records)
+      @records = records.merge(keyword_records)
+      @db_links = db_links
+      @db_link_counts = db_link_counts
       @calls = []
     end
 
     def fetch_resource_record(type, accession)
       @calls << [type, accession]
       @records.fetch([type, accession])
+    end
+
+    def fetch_resource_records_bulk(type, accessions, include_db_xrefs: false)
+      @calls << ['bulk', type, accessions, include_db_xrefs]
+      accessions.to_h { |accession| [accession, @records.fetch([type, accession])] }
+    end
+
+    def fetch_db_links(type, accession, target:)
+      @calls << ['dblink', type, accession, target]
+      @db_links.fetch([type, accession, target], [])
+    end
+
+    def fetch_db_link_counts(items)
+      @calls << ['dblink-counts', items]
+      items.to_h do |item|
+        key = [item[:type], item[:id]]
+        [key, @db_link_counts.fetch(key, {})]
+      end
     end
   end
 
@@ -22,16 +42,15 @@ class AccessionResolverTest < Minitest::Test
       %w[sra-run DRR000001] => {
         'type' => 'sra-run',
         'accession' => 'DRR000001',
-        'downloadUrl' => [
+        'distribution' => [
           {
-            'type' => 'sra',
-            'url' => 'https://ddbj.nig.ac.jp/public/ddbj_database/dra/sra/x/DRR000001.sra',
-            'ftpUrl' => 'ftp://ftp.ddbj.nig.ac.jp/ddbj_database/dra/sra/x/DRR000001.sra',
-            'size' => 123
+            'encodingFormat' => 'SRA',
+            'contentUrl' => 'https://ddbj.nig.ac.jp/public/ddbj_database/dra/sra/x/DRR000001.sra',
+            'contentSize' => 123
           },
           {
-            'type' => 'fastq',
-            'url' => 'https://ddbj.nig.ac.jp/public/ddbj_database/dra/fastq/x/DRR000001.fastq.bz2'
+            'encodingFormat' => 'FASTQ',
+            'contentUrl' => 'https://ddbj.nig.ac.jp/public/ddbj_database/dra/fastq/x/DRR000001.fastq.bz2'
           }
         ]
       }
@@ -54,17 +73,17 @@ class AccessionResolverTest < Minitest::Test
         'dbXrefs' => [
           {
             'type' => 'sra-run',
-            'url' => 'https://ddbj.nig.ac.jp/resource/sra-run/DRR000001'
+            'identifier' => 'DRR000001'
           }
         ]
       },
       %w[sra-run DRR000001] => {
         'type' => 'sra-run',
         'accession' => 'DRR000001',
-        'downloadUrl' => [
+        'distribution' => [
           {
-            'type' => 'sra',
-            'url' => 'https://example.test/DRR000001.sra'
+            'encodingFormat' => 'SRA',
+            'contentUrl' => 'https://example.test/DRR000001.sra'
           }
         ]
       }
@@ -91,10 +110,10 @@ class AccessionResolverTest < Minitest::Test
       %w[sra-run DRR000001] => {
         'type' => 'sra-run',
         'accession' => 'DRR000001',
-        'downloadUrl' => [
+        'distribution' => [
           {
-            'type' => 'sra',
-            'url' => 'https://example.test/DRR000001.sra'
+            'encodingFormat' => 'SRA',
+            'contentUrl' => 'https://example.test/DRR000001.sra'
           }
         ]
       }
@@ -104,7 +123,48 @@ class AccessionResolverTest < Minitest::Test
     downloads = resolver.resolve_downloads_from_record('PRJDB1', root_record)
 
     assert_equal ['https://example.test/DRR000001.sra'], downloads.map(&:url)
-    assert_equal [%w[sra-run DRR000001]], client.calls
+    assert_equal [['bulk', 'sra-run', %w[DRR000001], false]], client.calls
+  end
+
+  def test_direct_run_accessions_use_dblink
+    client = FakeClient.new(
+      {},
+      db_links: {
+        %w[bioproject PRJDB1 sra-run] => [
+          { 'type' => 'sra-run', 'identifier' => 'DRR000001' },
+          { 'type' => 'sra-run', 'identifier' => 'DRR000002' }
+        ]
+      }
+    )
+    resolver = Dratools::AccessionResolver.new(client: client)
+
+    direct_runs = resolver.direct_run_accessions_for('prjdb1')
+
+    assert_equal %w[DRR000001 DRR000002], direct_runs
+    assert_equal [%w[dblink bioproject PRJDB1 sra-run]], client.calls
+  end
+
+  def test_direct_run_accessions_return_run_itself
+    resolver = Dratools::AccessionResolver.new(client: FakeClient.new({}))
+
+    assert_equal ['DRR000001'], resolver.direct_run_accessions_for('drr000001')
+  end
+
+  def test_direct_run_count_uses_dblink_counts
+    client = FakeClient.new(
+      {},
+      db_link_counts: {
+        %w[bioproject PRJDB1] => { 'sra-run' => 42 }
+      }
+    )
+    resolver = Dratools::AccessionResolver.new(client: client)
+
+    count = resolver.direct_run_count_for('prjdb1')
+
+    assert_equal 42, count
+    assert_equal [
+      ['dblink-counts', [{ type: 'bioproject', id: 'PRJDB1' }]]
+    ], client.calls
   end
 
   def test_resolves_prjda_bioproject_accession
@@ -115,18 +175,17 @@ class AccessionResolverTest < Minitest::Test
         'dbXrefs' => [
           {
             'type' => 'sra-run',
-            'identifier' => 'DRR000002',
-            'url' => 'https://ddbj.nig.ac.jp/search/entry/sra-run/DRR000002'
+            'identifier' => 'DRR000002'
           }
         ]
       },
       %w[sra-run DRR000002] => {
         'type' => 'sra-run',
         'accession' => 'DRR000002',
-        'downloadUrl' => [
+        'distribution' => [
           {
-            'type' => 'sra',
-            'url' => 'https://example.test/DRR000002.sra'
+            'encodingFormat' => 'SRA',
+            'contentUrl' => 'https://example.test/DRR000002.sra'
           }
         ]
       }
@@ -171,9 +230,11 @@ class AccessionResolverTest < Minitest::Test
   def test_filters_fastq_downloads
     client = FakeClient.new(
       %w[sra-run DRR000001] => {
-        'downloadUrl' => [
-          { 'type' => 'sra', 'url' => 'https://example.test/DRR000001.sra' },
-          { 'type' => 'fastq', 'url' => 'https://example.test/DRR000001.fastq.bz2' }
+        'type' => 'sra-run',
+        'accession' => 'DRR000001',
+        'distribution' => [
+          { 'encodingFormat' => 'SRA', 'contentUrl' => 'https://example.test/DRR000001.sra' },
+          { 'encodingFormat' => 'FASTQ', 'contentUrl' => 'https://example.test/DRR000001.fastq.bz2' }
         ]
       }
     )

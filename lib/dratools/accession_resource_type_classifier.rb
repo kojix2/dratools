@@ -4,7 +4,7 @@ require_relative 'ddbj_record_fields'
 require_relative 'errors'
 
 module Dratools
-  # accession の接頭辞から DDBJ resource API の type を判定する。
+  # accession の接頭辞から DDBJ Search entry type を判定する。
   class AccessionResourceTypeClassifier
     RUN_PREFIXES = /\A[DES]RR\d+\z/
     EXPERIMENT_PREFIXES = /\A[DES]RX\d+\z/

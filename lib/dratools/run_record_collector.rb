@@ -10,7 +10,6 @@ require_relative 'traversal_node'
 module Dratools
   # BioProject などの上位レコードから DDBJ sra-run レコードを集める。
   class RunRecordCollector
-    XREF_URL_PATTERN = %r{/(?:resource|search/entry)/([^/]+)/([^/?#.]+)}
     TRAVERSABLE_XREF_TYPES = [
       DdbjRecordFields::SRA_RUN_RESOURCE_TYPE,
       DdbjRecordFields::SRA_EXPERIMENT_RESOURCE_TYPE,
@@ -40,14 +39,26 @@ module Dratools
         return node
       end
 
-      direct_children = explore_edges(run_xrefs, TraversalNode::DB_XREF_RELATION, seen_keys,
-                                      tolerant: tolerant,
-                                      direct_run_fetch_limit: direct_run_fetch_limit)
+      direct_children = explore_run_xrefs(
+        run_xrefs,
+        seen_keys,
+        tolerant: tolerant,
+        direct_run_fetch_limit: direct_run_fetch_limit
+      )
       if direct_children.any? { |child| child.run? || child.run_records.any? }
         node.children.concat(direct_children)
         return node
       end
 
+      node.children.concat(
+        recursive_children(ddbj_record, xrefs, seen_keys, tolerant, direct_run_fetch_limit)
+      )
+      node
+    end
+
+    private
+
+    def recursive_children(ddbj_record, xrefs, seen_keys, tolerant, direct_run_fetch_limit)
       recursive_xrefs = xrefs.select { |xref| traversable_xref?(xref) }
       validate_recursive_non_run_xref_count!(ddbj_record, recursive_xrefs)
       db_xref_edges = explore_edges(
@@ -64,11 +75,8 @@ module Dratools
         tolerant: tolerant,
         direct_run_fetch_limit: direct_run_fetch_limit
       )
-      node.children.concat(db_xref_edges + child_edges)
-      node
+      db_xref_edges + child_edges
     end
-
-    private
 
     def lightweight_direct_run_nodes(run_xrefs, direct_run_fetch_limit)
       return nil unless direct_run_fetch_limit && run_xrefs.length > direct_run_fetch_limit
@@ -111,6 +119,53 @@ module Dratools
       end
     end
 
+    def explore_run_xrefs(run_xrefs, seen_keys, tolerant:, direct_run_fetch_limit:)
+      fetchable_xrefs = unseen_fetchable_xrefs(run_xrefs, seen_keys)
+      return [] if fetchable_xrefs.empty?
+
+      accessions = fetchable_xrefs.map { |xref| xref_accession(xref) }
+      records = @client.fetch_resource_records_bulk(
+        DdbjRecordFields::SRA_RUN_RESOURCE_TYPE,
+        accessions,
+        include_db_xrefs: false
+      )
+      fetchable_xrefs.map do |xref|
+        accession = xref_accession(xref)
+        if (record = records[accession])
+          explore(
+            record,
+            seen_keys: seen_keys,
+            relation: TraversalNode::DB_XREF_RELATION,
+            tolerant: tolerant,
+            direct_run_fetch_limit: direct_run_fetch_limit
+          )
+        elsif tolerant
+          node_from_xref(
+            xref,
+            relation: TraversalNode::DB_XREF_RELATION,
+            error: "not found: #{accession}"
+          )
+        else
+          raise NotFoundError, "not found: sra-run/#{accession}"
+        end
+      end
+    end
+
+    def unseen_fetchable_xrefs(xrefs, seen_keys)
+      xrefs.each_with_object([]) do |xref, selected|
+        next unless traversable_xref?(xref)
+
+        accession = xref_accession(xref)
+        next if accession.empty?
+
+        reference_key = xref_key(xref)
+        next if reference_key.empty? || seen_keys.include?(reference_key)
+
+        seen_keys.add(reference_key)
+        selected << xref
+      end
+    end
+
     def explore_xref(xref, relation, seen_keys, tolerant:, direct_run_fetch_limit:)
       linked_record = fetch_xref_record(xref)
       explore(
@@ -127,20 +182,17 @@ module Dratools
     end
 
     def xref_key(xref)
-      reference_url = xref[DdbjRecordFields::URL_KEY].to_s
-      return reference_url unless reference_url.empty?
+      xref_accession(xref)
+    end
 
+    def xref_accession(xref)
       (xref[DdbjRecordFields::ID_KEY] || xref[DdbjRecordFields::IDENTIFIER_KEY]).to_s
     end
 
     def fetch_xref_record(xref)
-      if (resource_match = xref[DdbjRecordFields::URL_KEY].to_s.match(XREF_URL_PATTERN))
-        @client.fetch_resource_record(resource_match[1], resource_match[2])
-      elsif xref[DdbjRecordFields::ID_KEY] || xref[DdbjRecordFields::IDENTIFIER_KEY]
-        fetch_xref_by_identifier(xref)
-      else
-        raise InvalidRecordError, 'sra-run xref has no URL or id'
-      end
+      raise InvalidRecordError, 'xref has no identifier' if xref_accession(xref).empty?
+
+      fetch_xref_by_identifier(xref)
     end
 
     def fetch_xref_by_identifier(xref)
@@ -160,15 +212,13 @@ module Dratools
 
     def run_record?(ddbj_record)
       record_type = ddbj_record[DdbjRecordFields::TYPE_KEY]
-      return record_type == DdbjRecordFields::SRA_RUN_RESOURCE_TYPE if record_type
-
-      ddbj_record[DdbjRecordFields::DOWNLOAD_URL_KEY].is_a?(Array)
+      record_type == DdbjRecordFields::SRA_RUN_RESOURCE_TYPE
     end
 
     def node_from_record(ddbj_record, relation:)
       TraversalNode.new(
         relation: relation,
-        type: ddbj_record[DdbjRecordFields::TYPE_KEY] || inferred_record_type(ddbj_record),
+        type: ddbj_record[DdbjRecordFields::TYPE_KEY],
         accession: record_accession(ddbj_record),
         object_type: ddbj_record['objectType'],
         record: run_record?(ddbj_record) ? ddbj_record : nil
@@ -189,10 +239,6 @@ module Dratools
         ddbj_record[DdbjRecordFields::IDENTIFIER_KEY] ||
         ddbj_record[DdbjRecordFields::ID_KEY] ||
         ddbj_record[DdbjRecordFields::PRIMARY_ID_KEY]
-    end
-
-    def inferred_record_type(ddbj_record)
-      DdbjRecordFields::SRA_RUN_RESOURCE_TYPE if run_record?(ddbj_record)
     end
   end
 end

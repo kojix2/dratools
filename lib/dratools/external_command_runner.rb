@@ -86,7 +86,8 @@ module Dratools
       command =
         case File.basename(tool)
         when CURL_COMMAND
-          # 例: curl --location --fail --silent --show-error --range 0-0 --max-time 5 --output /dev/null URL
+          # 例: curl --location --fail --silent --show-error --range 0-0
+          #          --max-time 5 --output /dev/null URL
           [tool, *CURL_PROBE_OPTIONS, PROBE_BYTE_RANGE, CURL_TIMEOUT_OPTION, timeout.to_s,
            CURL_OUTPUT_OPTION, null_device, url]
         when WGET_COMMAND
@@ -112,7 +113,8 @@ module Dratools
         when CURL_COMMAND
           # curl の低速検知は「指定秒数のあいだ指定速度を下回ったら失敗」。
           # ネットワークが完全に切れず低速で固まるケースを、総時間制限なしで検出する。
-          # 例: curl --location --fail --continue-at - --connect-timeout 30 --speed-limit 1024 --speed-time 60 --retry 3 --output OUT URL
+          # 例: curl --location --fail --continue-at - --connect-timeout 30
+          #          --speed-limit 1024 --speed-time 60 --retry 3 --output OUT URL
           [tool, *CURL_DOWNLOAD_OPTIONS,
            CURL_CONNECT_TIMEOUT_OPTION, Config.download_connect_timeout_seconds.to_s,
            CURL_SPEED_LIMIT_OPTION, Config.download_stall_speed_bytes_per_second.to_s,
@@ -122,7 +124,8 @@ module Dratools
         when WGET_COMMAND
           # wget では --read-timeout を失速検知に近い意味で使う。
           # --continue は部分ファイルの続きから再開し、--output-document は保存先を固定する。
-          # 例: wget --continue --connect-timeout=30 --read-timeout=60 --tries=4 --waitretry=5 --output-document OUT URL
+          # 例: wget --continue --connect-timeout=30 --read-timeout=60
+          #          --tries=4 --waitretry=5 --output-document OUT URL
           [tool, WGET_CONTINUE_OPTION,
            "#{WGET_CONNECT_TIMEOUT_OPTION}=#{Config.download_connect_timeout_seconds}",
            "#{WGET_READ_TIMEOUT_OPTION}=#{Config.download_stall_timeout_seconds}",
@@ -132,7 +135,9 @@ module Dratools
         when ARIA2_COMMAND
           # aria2c は保存先をディレクトリとファイル名に分けて指定する。
           # --continue=true は部分ファイルがあれば続きから再開する。
-          # 例: aria2c --continue=true --split=1 --max-connection-per-server=1 --connect-timeout=30 --timeout=60 --lowest-speed-limit=1024 --max-tries=4 --retry-wait=5 --dir DIR --out FILE URL
+          # 例: aria2c --continue=true --split=1 --max-connection-per-server=1
+          #          --connect-timeout=30 --timeout=60 --lowest-speed-limit=1024
+          #          --max-tries=4 --retry-wait=5 --dir DIR --out FILE URL
           [tool, ARIA2_CONTINUE_OPTION, *ARIA2_SINGLE_CONNECTION_OPTIONS,
            "#{ARIA2_CONNECT_TIMEOUT_OPTION}=#{Config.download_connect_timeout_seconds}",
            "#{ARIA2_TIMEOUT_OPTION}=#{Config.download_stall_timeout_seconds}",

@@ -6,14 +6,19 @@ require_relative 'test_helper'
 
 class CommandLineInterfaceTest < Minitest::Test
   class FakeResolver
-    attr_reader :calls, :fetch_calls, :tree_options
+    attr_reader :calls, :fetch_calls, :count_calls, :direct_run_calls, :tree_options
 
-    def initialize(results: {}, records: {}, failures: {})
+    def initialize(results: {}, records: {}, failures: {}, direct_run_counts: {},
+                   direct_run_accessions: {})
       @results = results
       @records = records
       @failures = failures
+      @direct_run_counts = direct_run_counts
+      @direct_run_accessions = direct_run_accessions
       @calls = []
       @fetch_calls = []
+      @count_calls = []
+      @direct_run_calls = []
     end
 
     def resolve_downloads(accession, file_type:)
@@ -62,6 +67,16 @@ class CommandLineInterfaceTest < Minitest::Test
 
     def resource_type_for(accession)
       accession.match?(/\A[DES]RR/) ? 'sra-run' : 'bioproject'
+    end
+
+    def direct_run_count_for(accession)
+      @count_calls << accession
+      @direct_run_counts.fetch(accession, 0)
+    end
+
+    def direct_run_accessions_for(accession)
+      @direct_run_calls << accession
+      @direct_run_accessions.fetch(accession, [])
     end
   end
 
@@ -201,17 +216,7 @@ class CommandLineInterfaceTest < Minitest::Test
   end
 
   def test_url_rejects_large_direct_run_expansion
-    resolver = FakeResolver.new(
-      records: {
-        'PRJNA1' => {
-          'identifier' => 'PRJNA1',
-          'type' => 'bioproject',
-          'dbXrefs' => 51.times.map do |index|
-            { 'type' => 'sra-run', 'identifier' => "SRR#{index}" }
-          end
-        }
-      }
-    )
+    resolver = FakeResolver.new(direct_run_counts: { 'PRJNA1' => 51 })
 
     exit_status, stdout, stderr = run_cli(%w[url --tsv PRJNA1], resolver: resolver)
 
@@ -219,21 +224,14 @@ class CommandLineInterfaceTest < Minitest::Test
     assert_empty stdout
     assert_includes stderr, 'PRJNA1 has 51 direct runs'
     assert_includes stderr, 'url expands at most 50 direct runs from one parent accession'
-    assert_equal ['PRJNA1'], resolver.fetch_calls
+    assert_equal ['PRJNA1'], resolver.count_calls
+    assert_empty resolver.fetch_calls
     assert_empty resolver.calls
   end
 
   def test_url_direct_run_limit_uses_environment
     resolver = FakeResolver.new(
-      records: {
-        'PRJNA1' => {
-          'identifier' => 'PRJNA1',
-          'type' => 'bioproject',
-          'dbXrefs' => 51.times.map do |index|
-            { 'type' => 'sra-run', 'identifier' => "SRR#{index}" }
-          end
-        }
-      },
+      direct_run_counts: { 'PRJNA1' => 51 },
       results: { 'PRJNA1' => [download_for('SRR0')] }
     )
 
@@ -242,6 +240,7 @@ class CommandLineInterfaceTest < Minitest::Test
 
       assert_equal 0, exit_status
       assert_includes stdout, "SRR0\tsra\thttps://example.test/SRR0.sra"
+      assert_equal ['PRJNA1'], resolver.count_calls
       assert_equal ['PRJNA1'], resolver.fetch_calls
       assert_equal [%w[PRJNA1 sra]], resolver.calls
       assert_empty stderr
@@ -389,19 +388,7 @@ class CommandLineInterfaceTest < Minitest::Test
 
   def test_runs_uses_direct_run_xrefs_without_resolving_tree
     resolver = FakeResolver.new(
-      records: {
-        'ERP1' => {
-          'type' => 'sra-study',
-          'identifier' => 'ERP1',
-          'dbXrefs' => 101.times.map do |index|
-            {
-              'type' => 'sra-run',
-              'identifier' => "ERR#{index}",
-              'url' => "https://ddbj.nig.ac.jp/search/entry/sra-run/ERR#{index}"
-            }
-          end
-        }
-      }
+      direct_run_accessions: { 'ERP1' => 101.times.map { |index| "ERR#{index}" } }
     )
 
     exit_status, stdout, stderr = run_cli(%w[runs ERP1], resolver: resolver)
@@ -409,7 +396,9 @@ class CommandLineInterfaceTest < Minitest::Test
     assert_equal 0, exit_status
     assert_equal 101, stdout.lines.length
     assert_includes stdout, "ERR100\n"
+    assert_equal ['ERP1'], resolver.direct_run_calls
     assert_empty resolver.calls
+    assert_empty resolver.fetch_calls
     assert_empty stderr
   end
 
@@ -487,17 +476,7 @@ class CommandLineInterfaceTest < Minitest::Test
   end
 
   def test_size_rejects_large_direct_run_expansion
-    resolver = FakeResolver.new(
-      records: {
-        'PRJNA1' => {
-          'identifier' => 'PRJNA1',
-          'type' => 'bioproject',
-          'dbXrefs' => 51.times.map do |index|
-            { 'type' => 'sra-run', 'identifier' => "SRR#{index}" }
-          end
-        }
-      }
-    )
+    resolver = FakeResolver.new(direct_run_counts: { 'PRJNA1' => 51 })
 
     exit_status, stdout, stderr = run_cli(%w[size PRJNA1], resolver: resolver)
 
@@ -505,21 +484,14 @@ class CommandLineInterfaceTest < Minitest::Test
     assert_empty stdout
     assert_includes stderr, 'PRJNA1 has 51 direct runs'
     assert_includes stderr, 'at most 50 direct runs from one parent accession'
-    assert_equal ['PRJNA1'], resolver.fetch_calls
+    assert_equal ['PRJNA1'], resolver.count_calls
+    assert_empty resolver.fetch_calls
     assert_empty resolver.calls
   end
 
   def test_size_direct_run_limit_uses_environment
     resolver = FakeResolver.new(
-      records: {
-        'PRJNA1' => {
-          'identifier' => 'PRJNA1',
-          'type' => 'bioproject',
-          'dbXrefs' => 51.times.map do |index|
-            { 'type' => 'sra-run', 'identifier' => "SRR#{index}" }
-          end
-        }
-      },
+      direct_run_counts: { 'PRJNA1' => 51 },
       results: { 'PRJNA1' => [download_for('SRR0', size: 1024)] }
     )
 
@@ -528,6 +500,7 @@ class CommandLineInterfaceTest < Minitest::Test
 
       assert_equal 0, exit_status
       assert_includes stdout, "PRJNA1\t1\t1.0 KiB"
+      assert_equal ['PRJNA1'], resolver.count_calls
       assert_equal ['PRJNA1'], resolver.fetch_calls
       assert_equal [%w[PRJNA1 sra]], resolver.calls
       assert_empty stderr
