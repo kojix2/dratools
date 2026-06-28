@@ -179,12 +179,12 @@ class RunRecordCollectorTest < Minitest::Test
       'distribution' => []
     }
     parent_xrefs = [
-      ['sra-experiment', 'SRX000001'],
-      ['sra-sample', 'SRS000001'],
-      ['sra-study', 'SRP000001'],
-      ['sra-submission', 'SRA000001'],
-      ['bioproject', 'PRJNA000001'],
-      ['biosample', 'SAMN000001']
+      %w[sra-experiment SRX000001],
+      %w[sra-sample SRS000001],
+      %w[sra-study SRP000001],
+      %w[sra-submission SRA000001],
+      %w[bioproject PRJNA000001],
+      %w[biosample SAMN000001]
     ]
     parent_records = parent_xrefs.to_h do |type, accession|
       [
@@ -216,10 +216,10 @@ class RunRecordCollectorTest < Minitest::Test
     )
 
     assert_equal [run_record], run_records
-    assert_equal parent_xrefs, client.calls.select { |call| call.length == 2 }
-    assert_equal [
-      ['bulk', 'sra-run', %w[SRR000001], false]
-    ], client.calls.select { |call| call.first == 'bulk' }
+    assert_equal(parent_xrefs, client.calls.select { |call| call.length == 2 })
+    assert_equal([
+                   ['bulk', 'sra-run', %w[SRR000001], false]
+                 ], client.calls.select { |call| call.first == 'bulk' })
   end
 
   def test_prefers_direct_run_xrefs_over_broader_recursive_xrefs
