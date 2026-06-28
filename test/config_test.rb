@@ -8,12 +8,14 @@ class ConfigTest < Minitest::Test
       'DRATOOLS_MAX_RECURSIVE_NON_RUN_XREFS' => nil,
       'DRATOOLS_TREE_MAX_DIRECT_RUNS' => nil,
       'DRATOOLS_URL_MAX_DIRECT_RUNS' => nil,
-      'DRATOOLS_SIZE_MAX_DIRECT_RUNS' => nil
+      'DRATOOLS_SIZE_MAX_DIRECT_RUNS' => nil,
+      'DRATOOLS_DOWNLOAD_COMMAND' => nil
     ) do
       assert_equal 100, Dratools::Config.max_recursive_non_run_xrefs
       assert_equal 50, Dratools::Config.tree_max_direct_runs
       assert_equal 50, Dratools::Config.url_max_direct_runs
       assert_equal 50, Dratools::Config.size_max_direct_runs
+      assert_nil Dratools::Config.download_command
     end
   end
 
@@ -45,6 +47,12 @@ class ConfigTest < Minitest::Test
     end
   end
 
+  def test_accepts_download_command
+    with_env('DRATOOLS_DOWNLOAD_COMMAND' => 'aria2c') do
+      assert_equal 'aria2c', Dratools::Config.download_command
+    end
+  end
+
   def test_accepts_unlimited
     with_env('DRATOOLS_SIZE_MAX_DIRECT_RUNS' => 'unlimited') do
       assert_nil Dratools::Config.size_max_direct_runs
@@ -58,6 +66,16 @@ class ConfigTest < Minitest::Test
       end
 
       assert_includes error.message, "invalid DRATOOLS_SIZE_MAX_DIRECT_RUNS '0'"
+    end
+  end
+
+  def test_rejects_invalid_download_command
+    with_env('DRATOOLS_DOWNLOAD_COMMAND' => 'axel') do
+      error = assert_raises(Dratools::InvalidOptionError) do
+        Dratools::Config.download_command
+      end
+
+      assert_includes error.message, "invalid DRATOOLS_DOWNLOAD_COMMAND 'axel'"
     end
   end
 end

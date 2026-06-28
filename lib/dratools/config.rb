@@ -14,6 +14,7 @@ module Dratools
     DOWNLOAD_STALL_SPEED_ENV = 'DRATOOLS_DOWNLOAD_STALL_SPEED'
     DOWNLOAD_RETRY_COUNT_ENV = 'DRATOOLS_DOWNLOAD_RETRY_COUNT'
     DOWNLOAD_RETRY_WAIT_ENV = 'DRATOOLS_DOWNLOAD_RETRY_WAIT'
+    DOWNLOAD_COMMAND_ENV = 'DRATOOLS_DOWNLOAD_COMMAND'
 
     DEFAULT_MAX_RECURSIVE_NON_RUN_XREFS = 100
     DEFAULT_TREE_MAX_DIRECT_RUNS = 50
@@ -24,6 +25,7 @@ module Dratools
     DEFAULT_DOWNLOAD_STALL_SPEED_BYTES_PER_SECOND = 1024
     DEFAULT_DOWNLOAD_RETRY_COUNT = 3
     DEFAULT_DOWNLOAD_RETRY_WAIT_SECONDS = 5
+    SUPPORTED_DOWNLOAD_COMMANDS = %w[curl wget aria2c].freeze
     UNLIMITED_VALUE = 'unlimited'
 
     module_function
@@ -68,6 +70,18 @@ module Dratools
 
     def download_retry_wait_seconds
       positive_integer(DOWNLOAD_RETRY_WAIT_ENV, DEFAULT_DOWNLOAD_RETRY_WAIT_SECONDS)
+    end
+
+    def download_command
+      value = ENV.fetch(DOWNLOAD_COMMAND_ENV, '').strip
+      return nil if value.empty?
+      return value if SUPPORTED_DOWNLOAD_COMMANDS.include?(value)
+
+      invalid_environment_value!(
+        DOWNLOAD_COMMAND_ENV,
+        value,
+        SUPPORTED_DOWNLOAD_COMMANDS.join(' or ')
+      )
     end
 
     def positive_integer_or_unlimited(name, default)

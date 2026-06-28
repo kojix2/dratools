@@ -15,15 +15,20 @@
 
 ## ダウンロード開始と失速検知
 
-`get` は大きいファイルを扱います。このため、総ダウンロード時間の上限を設けません。代わりに、接続タイムアウト、失速検知、リトライの設定を `curl` / `wget` に渡します。
+`get` は大きいファイルを扱います。このため、総ダウンロード時間の上限を設けません。代わりに、接続タイムアウト、失速検知、リトライの設定を `curl` / `wget` / `aria2c` に渡します。
 
 | 環境変数 | 既定値 | 役割 |
 | --- | ---: | --- |
 | `DRATOOLS_DOWNLOAD_CONNECT_TIMEOUT` | `30` | 接続確立のタイムアウト秒数 |
 | `DRATOOLS_DOWNLOAD_STALL_TIMEOUT` | `60` | この秒数のあいだ転送速度が閾値を下回ると失速扱いにする |
-| `DRATOOLS_DOWNLOAD_STALL_SPEED` | `1024` | 失速判定に使う最低転送速度。単位は bytes/sec |
-| `DRATOOLS_DOWNLOAD_RETRY_COUNT` | `3` | ダウンロード失敗時のリトライ回数。`0` も指定可能 |
-| `DRATOOLS_DOWNLOAD_RETRY_WAIT` | `5` | `wget` のリトライ待ち秒数 |
+| `DRATOOLS_DOWNLOAD_STALL_SPEED` | `1024` | `curl` / `aria2c` の失速判定に使う最低転送速度。単位は bytes/sec |
+| `DRATOOLS_DOWNLOAD_RETRY_COUNT` | `3` | ダウンロード失敗時のリトライ回数。`0` はリトライなし |
+| `DRATOOLS_DOWNLOAD_RETRY_WAIT` | `5` | `wget` / `aria2c` のリトライ待ち秒数 |
+| `DRATOOLS_DOWNLOAD_COMMAND` | 自動 | 実ダウンロードと `probe` に使う外部コマンド。`curl`, `wget`, `aria2c` のいずれか |
+
+`DRATOOLS_DOWNLOAD_COMMAND` を指定しない場合は、`curl`, `wget` の順で PATH にあるものを使います。`aria2c` は自動探索しません。`aria2c` を使う場合は `DRATOOLS_DOWNLOAD_COMMAND=aria2c` を指定してください。指定した場合はそのコマンドだけを使います。見つからない場合は、別のコマンドへ自動では切り替えません。
+
+`DRATOOLS_DOWNLOAD_RETRY_COUNT` は、初回の試行を含まない「リトライ回数」です。`curl` にはそのまま渡します。`wget` と `aria2c` は総試行回数を受け取るため、内部で `リトライ回数 + 1` に変換します。
 
 ## 例
 
@@ -60,6 +65,18 @@ DRATOOLS_DOWNLOAD_CONNECT_TIMEOUT=2 \
 DRATOOLS_DOWNLOAD_STALL_TIMEOUT=2 \
 DRATOOLS_DOWNLOAD_RETRY_COUNT=0 \
 dratools get --no-verify -O ~/Downloads DRR000001
+```
+
+`wget` を明示してダウンロードする:
+
+```sh
+DRATOOLS_DOWNLOAD_COMMAND=wget dratools get -O ~/Downloads DRR000001
+```
+
+`aria2c` を明示してダウンロードする:
+
+```sh
+DRATOOLS_DOWNLOAD_COMMAND=aria2c dratools get -O ~/Downloads DRR000001
 ```
 
 ## 注意
