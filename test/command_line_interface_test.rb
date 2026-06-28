@@ -324,14 +324,6 @@ class CommandLineInterfaceTest < Minitest::Test
     assert_empty stderr
   end
 
-  def test_top_level_help_lists_aliases_with_canonical_names
-    exit_status, stdout, = run_cli(['--help'], resolver: FakeResolver.new(results: {}))
-
-    assert_equal 0, exit_status
-    assert_includes stdout, 'Aliases:'
-    assert_includes stdout, 'run     -> runs'
-  end
-
   def test_singular_alias_dispatches_to_runs_command
     resolver = FakeResolver.new(
       results: { 'PRJNA1' => [download_for('DRR000001'), download_for('DRR000002')] }

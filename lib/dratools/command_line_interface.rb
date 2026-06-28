@@ -124,12 +124,7 @@ module Dratools
         stream.puts format('  %-7<name>s %<summary>s', name: name, summary: summary)
       end
       stream.puts ''
-      stream.puts 'Aliases:'
-      SUBCOMMAND_ALIASES.each do |alias_name, canonical|
-        stream.puts format('  %-7<a>s -> %<c>s', a: alias_name, c: canonical)
-      end
-      stream.puts ''
-      stream.puts "Run '#{COMMAND_NAME} <command> --help' for command options."
+      stream.puts "各コマンドのオプションは '#{COMMAND_NAME} <command> --help' で確認できます。"
       stream.puts ''
       stream.puts 'Examples:'
       USAGE_EXAMPLES.each { |example| stream.puts "  #{example}" }
