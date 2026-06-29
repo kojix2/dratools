@@ -36,7 +36,7 @@ gem install dratools
 | `tree`  | accession から run へ辿る探索ツリーを表示する |
 | `meta`  | レコードのメタ情報を表示する（`--json` で生 JSON） |
 | `runs`  | run accession の一覧を出力する |
-| `size`  | ダウンロード合計サイズを集計する（`--per-run` で run ごとに分割） |
+| `size`  | run ごとにダウンロードサイズを集計する（`--total` で accession 単位の合算に切り替え） |
 
 コマンド名は基本的に単数形ですが、一覧を返す `runs` だけ複数形です。打ち間違い対策として `run`/`urls`/`sizes`/`trees` の別名も受け付けます。
 
@@ -84,8 +84,8 @@ dratools url --json DRR000001                     # URL 情報を JSON で表示
 dratools url --tsv DRR000001                      # run/type/url/size/md5 を TAB 区切りで
 dratools meta --json DRR000001                    # entry JSON を表示する
 dratools runs PRJNA341783 | dratools get -O ~/Downloads # run 一覧をダウンロードへ渡す
-dratools size --bytes PRJNA341783                 # 合計サイズをバイト数で表示する
-dratools size --per-run DRX000001                 # 親 accession を run ごとに集計する
+dratools size --bytes PRJNA341783                 # サイズをバイト数で表示する
+dratools size --total DRX000001                   # 親 accession を run ごとに分けず合算する
 dratools get --skip-existing -O ~/Downloads DRR000001  # 既存ファイルは触らない
 ```
 

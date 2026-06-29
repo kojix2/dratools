@@ -405,7 +405,7 @@ class CommandLineInterfaceTest < Minitest::Test
     assert_empty stderr
   end
 
-  def test_size_prints_per_accession_and_total
+  def test_size_total_prints_per_accession_and_total
     resolver = FakeResolver.new(
       results: {
         'DRR000001' => [download_for('DRR000001', size: 1024)],
@@ -413,7 +413,7 @@ class CommandLineInterfaceTest < Minitest::Test
       }
     )
 
-    exit_status, stdout, stderr = run_cli(%w[size DRR000001 DRR000002], resolver: resolver)
+    exit_status, stdout, stderr = run_cli(%w[size --total DRR000001 DRR000002], resolver: resolver)
 
     assert_equal 0, exit_status
     lines = stdout.lines(chomp: true)
@@ -424,11 +424,33 @@ class CommandLineInterfaceTest < Minitest::Test
     assert_empty stderr
   end
 
-  def test_size_per_run_groups_downloads_by_run_accession
+  def test_size_defaults_to_per_run_grouping
     resolver = FakeResolver.new(
       results: {
         'DRX1' => [
           download_for('DRR000001', size: 1024),
+          download_for('DRR000001', size: 1024),
+          download_for('DRR000002', size: 2048)
+        ]
+      }
+    )
+
+    exit_status, stdout, stderr = run_cli(%w[size DRX1], resolver: resolver)
+
+    assert_equal 0, exit_status
+    assert_equal [
+      '#accession	files	size	unresolved',
+      "DRR000001\t2\t2.0 KiB\t0",
+      "DRR000002\t1\t2.0 KiB\t0"
+    ], stdout.lines(chomp: true)
+    # per-run の total はデータ行と混ぜず標準エラーに出す。
+    assert_equal "total\t3\t4.0 KiB\t0", stderr.lines(chomp: true).first
+  end
+
+  def test_size_per_run_flag_is_accepted_as_explicit_default
+    resolver = FakeResolver.new(
+      results: {
+        'DRX1' => [
           download_for('DRR000001', size: 1024),
           download_for('DRR000002', size: 2048)
         ]
@@ -440,11 +462,10 @@ class CommandLineInterfaceTest < Minitest::Test
     assert_equal 0, exit_status
     assert_equal [
       '#accession	files	size	unresolved',
-      "DRR000001\t2\t2.0 KiB\t0",
+      "DRR000001\t1\t1.0 KiB\t0",
       "DRR000002\t1\t2.0 KiB\t0"
     ], stdout.lines(chomp: true)
-    # --per-run の total はデータ行と混ぜず標準エラーに出す。
-    assert_equal "total\t3\t4.0 KiB\t0", stderr.lines(chomp: true).first
+    assert_equal "total\t2\t3.0 KiB\t0", stderr.lines(chomp: true).first
   end
 
   def test_size_bytes_marks_size_na_when_all_unresolved
@@ -490,7 +511,7 @@ class CommandLineInterfaceTest < Minitest::Test
     )
 
     with_env('DRATOOLS_SIZE_MAX_DIRECT_RUNS' => '201') do
-      exit_status, stdout, stderr = run_cli(%w[size PRJNA1], resolver: resolver)
+      exit_status, stdout, stderr = run_cli(%w[size --total PRJNA1], resolver: resolver)
 
       assert_equal 0, exit_status
       assert_includes stdout, "PRJNA1\t1\t1.0 KiB"

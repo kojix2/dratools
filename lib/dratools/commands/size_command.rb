@@ -26,7 +26,7 @@ module Dratools
           timeout: DEFAULT_SIZE_TIMEOUT_SECONDS,
           bytes: false,
           json: false,
-          per_run: false
+          per_run: true
         )
       end
 
@@ -37,7 +37,10 @@ module Dratools
           @options[:timeout] = value
         end
         parser.on('--bytes', 'サイズをバイト数で表示する') { @options[:bytes] = true }
-        parser.on('-r', '--per-run', '親 accession を run accession ごとに分けて集計する') do
+        parser.on('--total', '親 accession を run ごとに分けず accession 単位で合算する') do
+          @options[:per_run] = false
+        end
+        parser.on('-r', '--per-run', 'run accession ごとに分けて集計する (default)') do
           @options[:per_run] = true
         end
         parser.on('--json', 'サイズ集計を JSON で表示する') { @options[:json] = true }
@@ -47,7 +50,7 @@ module Dratools
         [
           "#{Dratools::NAME} size DRR000001",
           "#{Dratools::NAME} size --type fastq PRJNA341783",
-          "#{Dratools::NAME} size --per-run DRX000001",
+          "#{Dratools::NAME} size --total DRX000001",
           "#{Dratools::NAME} size --json DRR000001 DRR000002"
         ]
       end

@@ -29,7 +29,7 @@ bundle exec rake install
 | `tree`  | accession から run へ辿る探索ツリーを表示する |
 | `meta`  | レコードのメタ情報を表示する（`--json` で生 JSON） |
 | `runs`  | run accession の一覧を出力する |
-| `size`  | ダウンロード合計サイズを集計する |
+| `size`  | run ごとにダウンロードサイズを集計する（`--total` で合算） |
 
 コマンド名は基本的に単数形です。一覧を返す `runs` だけが複数形です。`run` は「実行する」と読み間違えやすいためです。打ち間違いに備えて別名も使えます。`run` は `runs`、`urls` は `url`、`sizes` は `size`、`trees` は `tree` として扱います。ヘルプとエラーとバナーには、表の正規名だけを表示します。
 
@@ -69,33 +69,33 @@ dratools runs PRJNA341783 | dratools get -O ~/Downloads
 
 Study や BioProject には多数の experiment や sample が含まれることがあります。`runs` はこれらを無制限には辿りません。上限を超えるとエラーで止まります。run へ直接リンクがある場合は、500 件を超えても制限の対象外です。レコードが大きい場合は、先に `tree` や `meta` で構造を確認してください。experiment や sample に絞ってから `runs` を使ってください。
 
-## 合計サイズを確認する (`size`)
+## サイズを確認する (`size`)
 
 `size` は実ファイルの URL に HTTP `HEAD` を送ります。`Content-Length` を合計します。FASTQ はディレクトリ URL で返ることがあります。その場合はディレクトリ一覧から `*.fastq*` を取り出します。取り出した各ファイルに `HEAD` を送ります。
 
 ```sh
-dratools size PRJNA341783
+dratools size DRX000001
 ```
 
-出力は1行1件です。各行は accession、ファイル数、合計サイズ、`unresolved` 数を並べます。区切りは TAB です。先頭に `#` で始まるヘッダ行が付きます。合計サイズだけを取り出すには `cut -f3` を使います。ヘッダを除くには `grep -v '^#'` を使います。サイズを1つも取得できなかった行は、size 列を `NA` にします。accession を複数渡すと、最後に `total` 行が付きます。
-
-```text
-#accession	files	size	unresolved
-DRR000001	1	1.0 KiB	0
-```
-
-既定では accession 1 件につき1行です。親 accession の場合は配下をすべて合算します。`--per-run`（`-r`）を付けると、run accession ごとに分けて集計します。これは `dratools runs XXX | xargs dratools size` と同じ結果です。1 コマンドで実行できます。
-
-```sh
-dratools size --per-run DRX000001
-```
-
-`--per-run` のとき、`total` 行は標準エラーに出します。標準出力には集計行だけが残ります。`awk` で合計するときに `total` 行を二重に数えないためです。
+既定では run accession ごとに1行に分けて集計します。親 accession を渡すと、配下の run を1件ずつ表示します。これは `dratools runs XXX | xargs dratools size` と同じ結果です。1 コマンドで実行できます。各行は accession、ファイル数、サイズ、`unresolved` 数を並べます。区切りは TAB です。先頭に `#` で始まるヘッダ行が付きます。サイズだけを取り出すには `cut -f3` を使います。ヘッダを除くには `grep -v '^#'` を使います。サイズを1つも取得できなかった行は、size 列を `NA` にします。
 
 ```text
 #accession	files	size	unresolved
 DRR000001	2	1.2 GiB	0
 DRR000002	1	0.8 GiB	0
+```
+
+run ごとの内訳が複数あるとき、`total` 行は標準エラーに出します。標準出力には集計行だけが残ります。`awk` で合計するときに `total` 行を二重に数えないためです。
+
+合計だけが欲しいときは `--total` を付けます。accession 1 件につき1行にまとめます。親 accession の場合は配下をすべて合算します。accession を複数渡すと、最後に `total` 行が標準出力に付きます。
+
+```sh
+dratools size --total PRJNA341783
+```
+
+```text
+#accession	files	size	unresolved
+PRJNA341783	3	2.0 GiB	0
 ```
 
 バイト数で表示する場合は `--bytes` を付けます。
