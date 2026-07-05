@@ -24,6 +24,8 @@ Rubyのgemとしてインストールできます。
 gem install dratools
 ```
 
+HPC環境向けに、インストールが簡単なGo言語実装の [dratools-go](https://github.com/kojix2/dratools-go) もあります。
+
 ## 使い方
 
 `dratools` はサブコマンド方式です。`dratools <command> --help` で各コマンドのオプションを確認できます。
