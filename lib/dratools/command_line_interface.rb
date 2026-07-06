@@ -70,7 +70,7 @@ module Dratools
     def initialize(
       argv,
       resolver: nil,
-      downloader: DownloadService.new,
+      downloader: nil,
       stdout: $stdout,
       stderr: $stderr,
       stdin: $stdin
@@ -84,7 +84,7 @@ module Dratools
         enabled: interactive?(stderr)
       )
       @resolver = resolver || default_resolver
-      @downloader = downloader
+      @downloader = downloader || DownloadService.new(before_download: -> { @progress.finish })
     end
 
     def run

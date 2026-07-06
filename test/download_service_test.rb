@@ -46,6 +46,17 @@ class DownloadServiceTest < Minitest::Test
     end
   end
 
+  class OrderingRunner
+    def initialize(events)
+      @events = events
+    end
+
+    def download_url(_url, output_path)
+      @events << :download
+      File.write(output_path, 'hello')
+    end
+  end
+
   def test_save_download_verifies_md5_when_available
     download = download_for(md5: '5d41402abc4b2a76b9719d911017c592')
 
@@ -85,6 +96,20 @@ class DownloadServiceTest < Minitest::Test
 
       assert_equal File.join(directory, 'DRR000001.sra'), result.path
     end
+  end
+
+  def test_save_download_calls_before_download_before_runner
+    download = download_for(md5: nil)
+    events = []
+
+    Dir.mktmpdir do |directory|
+      Dratools::DownloadService.new(
+        runner: OrderingRunner.new(events),
+        before_download: -> { events << :before_download }
+      ).save_download(download, outdir: directory, verify: false)
+    end
+
+    assert_equal %i[before_download download], events
   end
 
   def test_save_download_skips_existing_file_when_md5_matches
