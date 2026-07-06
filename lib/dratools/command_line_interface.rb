@@ -84,7 +84,7 @@ module Dratools
         enabled: interactive?(stderr)
       )
       @resolver = resolver || default_resolver
-      @downloader = downloader || DownloadService.new(before_download: -> { @progress.finish })
+      @downloader = downloader || DownloadService.new
     end
 
     def run

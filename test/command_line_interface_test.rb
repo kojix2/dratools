@@ -93,12 +93,13 @@ class CommandLineInterfaceTest < Minitest::Test
       true
     end
 
-    def save_download(download, **options)
+    def save_download(download, **options, &before_download)
       @save_calls << [download, options]
       if @save_failures.key?(download.run_accession)
         raise @save_failures.fetch(download.run_accession)
       end
 
+      before_download&.call('/tmp/downloaded.sra')
       Dratools::DownloadService::DownloadResult.new(path: '/tmp/downloaded.sra', skipped: false)
     end
 
@@ -647,6 +648,7 @@ class CommandLineInterfaceTest < Minitest::Test
 
     assert_equal 0, exit_status
     assert_equal false, downloader.save_calls.first.last[:verify]
+    assert_includes stderr, "Downloading\t/tmp/downloaded.sra"
     assert_includes stderr, "Downloaded\t/tmp/downloaded.sra"
     assert_includes stderr, 'dratools get: 1 downloaded, 0 skipped'
   end
@@ -689,6 +691,7 @@ class CommandLineInterfaceTest < Minitest::Test
     assert_equal 1, exit_status
     assert_equal [failed_download, successful_download], downloader.save_calls.map(&:first)
     assert_includes stderr, 'dratools get: DRR000001: download URL points to a directory'
+    assert_includes stderr, "Downloading\t/tmp/downloaded.sra"
     assert_includes stderr, "Downloaded\t/tmp/downloaded.sra"
     assert_includes stderr, 'dratools get: 1 downloaded, 0 skipped, 1 failed'
   end

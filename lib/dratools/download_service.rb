@@ -35,14 +35,9 @@ module Dratools
     USER_AGENT_HEADER = 'User-Agent'
     FASTQ_HREF_PATTERN = /href=(?<quote>["'])(?<href>[^"']*\.fastq[^"']*)\k<quote>/i
 
-    def initialize(
-      runner: ExternalCommandRunner.new,
-      checksum_verifier: ChecksumVerifier.new,
-      before_download: nil
-    )
+    def initialize(runner: ExternalCommandRunner.new, checksum_verifier: ChecksumVerifier.new)
       @runner = runner
       @checksum_verifier = checksum_verifier
-      @before_download = before_download
     end
 
     def probe_download(download, protocol: DEFAULT_PROTOCOL, timeout: DEFAULT_PROBE_TIMEOUT_SECONDS)
@@ -71,7 +66,8 @@ module Dratools
       protocol: DEFAULT_PROTOCOL,
       verify: true,
       force: false,
-      skip_existing: false
+      skip_existing: false,
+      &before_download
     )
       FileUtils.mkdir_p(outdir)
       download_url = download.url_for_protocol(protocol)
@@ -90,7 +86,7 @@ module Dratools
         return DownloadResult.new(path: output_path, skipped: true)
       end
 
-      @before_download&.call
+      before_download&.call(output_path)
       @runner.download_url(download_url, output_path)
       if verify && checksum_available?(download)
         @checksum_verifier.verify_md5!(output_path, download.md5)

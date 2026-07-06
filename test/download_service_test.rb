@@ -104,12 +104,13 @@ class DownloadServiceTest < Minitest::Test
 
     Dir.mktmpdir do |directory|
       Dratools::DownloadService.new(
-        runner: OrderingRunner.new(events),
-        before_download: -> { events << :before_download }
-      ).save_download(download, outdir: directory, verify: false)
+        runner: OrderingRunner.new(events)
+      ).save_download(download, outdir: directory, verify: false) do |path|
+        events << [:before_download, File.basename(path)]
+      end
     end
 
-    assert_equal %i[before_download download], events
+    assert_equal [[:before_download, 'DRR000001.sra'], :download], events
   end
 
   def test_save_download_skips_existing_file_when_md5_matches

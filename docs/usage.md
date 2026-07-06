@@ -190,7 +190,7 @@ direct run を多数持つ親 accession では、`tree` は各 run を個別取�
 dratools get -O ~/Downloads DRR000001
 ```
 
-ダウンロード中は `curl`, `wget`, `aria2c` のいずれかの進捗が標準エラーに出ます。取得したファイルは `Downloaded<TAB>PATH` と表示します。既存ファイルを再利用した場合は `Skipped<TAB>PATH` と表示します。これらは標準エラーに出ます。最後に `dratools get: N downloaded, M skipped` のサマリを出します。状態とパスは TAB 区切りです。パスだけを取り出すには `cut -f2` を使います。
+ダウンロード開始時は `Downloading<TAB>PATH` と表示し、その後に `curl`, `wget`, `aria2c` のいずれかの進捗が標準エラーに出ます。取得したファイルは `Downloaded<TAB>PATH` と表示します。既存ファイルを再利用した場合は `Skipped<TAB>PATH` と表示します。これらは標準エラーに出ます。最後に `dratools get: N downloaded, M skipped` のサマリを出します。状態とパスは TAB 区切りです。パスだけを取り出すには `cut -f2` を使います。
 
 ### 既存ファイルの扱い
 

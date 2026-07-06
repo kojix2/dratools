@@ -7,6 +7,7 @@ module Dratools
     # 実際にファイルをダウンロードする。
     class GetCommand < BaseCommand
       DEFAULT_OUTPUT_DIRECTORY = DownloadService::DEFAULT_OUTPUT_DIRECTORY
+      DOWNLOAD_START_PREFIX = 'Downloading'
       DOWNLOAD_SUCCESS_PREFIX = 'Downloaded'
       DOWNLOAD_SKIPPED_PREFIX = 'Skipped'
 
@@ -70,7 +71,9 @@ module Dratools
           verify: @options[:verify],
           force: @options[:force],
           skip_existing: @options[:skip_existing]
-        )
+        ) do |path|
+          @stderr.puts "#{DOWNLOAD_START_PREFIX}\t#{path}"
+        end
         if result.skipped?
           @skipped_count = @skipped_count.to_i + 1
           @stderr.puts "#{DOWNLOAD_SKIPPED_PREFIX}\t#{result.path}"
