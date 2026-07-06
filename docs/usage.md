@@ -190,7 +190,7 @@ direct run を多数持つ親 accession では、`tree` は各 run を個別取�
 dratools get -O ~/Downloads DRR000001
 ```
 
-ダウンロード開始時は `Downloading<TAB>PATH` と表示し、その後に `curl`, `wget`, `aria2c` のいずれかの進捗が標準エラーに出ます。取得したファイルは `Downloaded<TAB>PATH` と表示します。既存ファイルを再利用した場合は `Skipped<TAB>PATH` と表示します。これらは標準エラーに出ます。最後に `dratools get: N downloaded, M skipped` のサマリを出します。状態とパスは TAB 区切りです。パスだけを取り出すには `cut -f2` を使います。
+ダウンロード開始時は `[dratools] Downloading<TAB>PATH` と表示し、その後に `curl`, `wget`, `aria2c` のいずれかの進捗が標準エラーに出ます。取得したファイルは `[dratools] Downloaded<TAB>PATH` と表示します。既存ファイルを再利用した場合は `[dratools] Skipped<TAB>PATH` と表示します。これらは標準エラーに出ます。最後に `[dratools] dratools get: N downloaded, M skipped` のサマリを出します。状態とパスは TAB 区切りです。パスだけを取り出すには `cut -f2` を使います。
 
 ### 既存ファイルの扱い
 
@@ -198,11 +198,11 @@ DDBJ のメタデータに md5 が含まれることは多くありません。�
 
 同名のファイルが既にある場合、`get` はサーバにファイルサイズを問い合わせます。それをローカルのファイルサイズと比べます。
 
-- サイズが同じなら、再取得しません。`Skipped` と表示します。
+- サイズが同じなら、再取得しません。`[dratools] Skipped` と表示します。
 - ローカルのほうが小さいなら、再取得します。途中で中断したファイルが対象です。
 - ローカルのほうが大きいなら、エラーになります。別物の可能性があるためです。`--force` で上書きできます。
 
-md5 が得られる場合は、サイズではなく md5 で判定します。既存ファイルの md5 が一致すれば `Skipped` と表示します。ダウンロード後にも md5 を照合します。
+md5 が得られる場合は、サイズではなく md5 で判定します。既存ファイルの md5 が一致すれば `[dratools] Skipped` と表示します。ダウンロード後にも md5 を照合します。
 
 ### オプション
 

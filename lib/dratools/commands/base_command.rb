@@ -179,10 +179,14 @@ module Dratools
         @tsv_header_printed = true
       end
 
+      def dratools_message(message)
+        "[#{Dratools::NAME}] #{message}"
+      end
+
       def report_error(message, accession: nil)
         prefix = "#{Dratools::NAME} #{command_name}"
         prefix = "#{prefix}: #{accession}" if accession
-        @stderr.puts "#{prefix}: #{message}"
+        @stderr.puts dratools_message("#{prefix}: #{message}")
       end
     end
   end

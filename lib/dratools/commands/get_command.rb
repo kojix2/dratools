@@ -60,7 +60,7 @@ module Dratools
       def finalize
         parts = ["#{@downloaded_count.to_i} downloaded", "#{@skipped_count.to_i} skipped"]
         parts << "#{@failed_count} failed" if @failed_count.positive?
-        @stderr.puts "#{Dratools::NAME} #{command_name}: #{parts.join(', ')}"
+        @stderr.puts dratools_message("#{Dratools::NAME} #{command_name}: #{parts.join(', ')}")
       end
 
       def save_one_download(accession, download)
@@ -72,14 +72,14 @@ module Dratools
           force: @options[:force],
           skip_existing: @options[:skip_existing]
         ) do |path|
-          @stderr.puts "#{DOWNLOAD_START_PREFIX}\t#{path}"
+          @stderr.puts dratools_message("#{DOWNLOAD_START_PREFIX}\t#{path}")
         end
         if result.skipped?
           @skipped_count = @skipped_count.to_i + 1
-          @stderr.puts "#{DOWNLOAD_SKIPPED_PREFIX}\t#{result.path}"
+          @stderr.puts dratools_message("#{DOWNLOAD_SKIPPED_PREFIX}\t#{result.path}")
         else
           @downloaded_count = @downloaded_count.to_i + 1
-          @stderr.puts "#{DOWNLOAD_SUCCESS_PREFIX}\t#{result.path}"
+          @stderr.puts dratools_message("#{DOWNLOAD_SUCCESS_PREFIX}\t#{result.path}")
         end
       rescue Error => error
         report_error(error.message, accession: accession)

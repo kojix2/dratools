@@ -106,7 +106,7 @@ module Dratools
       command_class = SUBCOMMANDS[name] || SUBCOMMANDS[SUBCOMMAND_ALIASES[name]]
       unless command_class
         expected = SUBCOMMANDS.keys.join(', ')
-        @stderr.puts "#{COMMAND_NAME}: unknown command '#{name}' (expected: #{expected})"
+        @stderr.puts "[#{COMMAND_NAME}] #{COMMAND_NAME}: unknown command '#{name}' (expected: #{expected})"
         return FAILURE_EXIT_STATUS
       end
 

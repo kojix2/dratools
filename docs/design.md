@@ -66,7 +66,7 @@ md5 が得られる候補では、ダウンロード後に `Digest::MD5.file` �
 
 1. `--force` があれば既存ファイルを使わず再取得する
 2. `--skip-existing` があれば md5 を見ずに既存ファイルを使う
-3. md5 があり、既存ファイルの md5 が一致すれば再取得せず `Skipped` にする
+3. md5 があり、既存ファイルの md5 が一致すれば再取得せず `[dratools] Skipped` にする
 4. それ以外は `curl --continue-at -`, `wget --continue`, `aria2c --continue=true` でレジュームを試みる
 
 md5 が無い候補では、既定では既存ファイルをスキップしません。SRA ファイルとしての検証は dratools の既定動作には含めません。
