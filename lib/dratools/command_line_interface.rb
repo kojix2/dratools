@@ -44,11 +44,11 @@ module Dratools
     VERSION_FLAGS = ['-v', '--version', 'version'].freeze
 
     SUBCOMMAND_SUMMARIES = {
-      'url' => 'ダウンロード URL を表示する (--json で JSON)',
+      'url' => 'ダウンロード URL を表示する',
       'get' => 'ファイルをダウンロードする',
       'probe' => '短時間の接続確認だけ行う',
       'tree' => '探索ツリーを表示する',
-      'meta' => 'レコードのメタ情報を表示する (--json で生 JSON)',
+      'meta' => 'レコードのメタ情報を表示する',
       'runs' => 'run accession の一覧を出力する',
       'size' => 'ダウンロード合計サイズを集計する'
     }.freeze
