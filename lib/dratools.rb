@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'dratools/version'
+require_relative 'dratools/message_format'
 require_relative 'dratools/errors'
 require_relative 'dratools/config'
 require_relative 'dratools/ddbj_record_fields'

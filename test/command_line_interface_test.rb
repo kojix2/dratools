@@ -259,7 +259,7 @@ class CommandLineInterfaceTest < Minitest::Test
 
     assert_equal 1, exit_status
     assert_equal ['https://example.test/DRR000001.sra'], stdout.lines(chomp: true)
-    assert_includes stderr, '[dratools] dratools url: DRR000002: download URL not found'
+    assert_includes stderr, '[dratools] url: DRR000002: download URL not found'
   end
 
   def test_returns_non_zero_when_accession_is_missing
@@ -304,14 +304,14 @@ class CommandLineInterfaceTest < Minitest::Test
     )
 
     assert_equal 1, exit_status
-    assert_includes stderr, "[dratools] dratools url: invalid --type 'fasta' (expected: sra, fastq, all)"
+    assert_includes stderr, "[dratools] url: invalid --type 'fasta' (expected: sra, fastq, all)"
   end
 
   def test_unknown_command_is_reported
     exit_status, _stdout, stderr = run_cli(['frobnicate'], resolver: FakeResolver.new(results: {}))
 
     assert_equal 1, exit_status
-    expected = '[dratools] dratools: unknown command \'frobnicate\' ' \
+    expected = '[dratools] unknown command \'frobnicate\' ' \
                '(expected: url, get, probe, tree, meta, runs, size)'
     assert_includes stderr, expected
   end
@@ -650,7 +650,7 @@ class CommandLineInterfaceTest < Minitest::Test
     assert_equal false, downloader.save_calls.first.last[:verify]
     assert_includes stderr, "[dratools] Downloading\t/tmp/downloaded.sra"
     assert_includes stderr, "[dratools] Downloaded\t/tmp/downloaded.sra"
-    assert_includes stderr, '[dratools] dratools get: 1 downloaded, 0 skipped'
+    assert_includes stderr, '[dratools] get: 1 downloaded, 0 skipped'
   end
 
   def test_get_force_and_skip_existing_are_passed_to_downloader
@@ -690,10 +690,10 @@ class CommandLineInterfaceTest < Minitest::Test
 
     assert_equal 1, exit_status
     assert_equal [failed_download, successful_download], downloader.save_calls.map(&:first)
-    assert_includes stderr, '[dratools] dratools get: DRR000001: download URL points to a directory'
+    assert_includes stderr, '[dratools] get: DRR000001: download URL points to a directory'
     assert_includes stderr, "[dratools] Downloading\t/tmp/downloaded.sra"
     assert_includes stderr, "[dratools] Downloaded\t/tmp/downloaded.sra"
-    assert_includes stderr, '[dratools] dratools get: 1 downloaded, 0 skipped, 1 failed'
+    assert_includes stderr, '[dratools] get: 1 downloaded, 0 skipped, 1 failed'
   end
 
   def test_tree_prints_resolver_tree_without_requiring_downloads

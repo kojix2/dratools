@@ -60,7 +60,7 @@ module Dratools
       def finalize
         parts = ["#{@downloaded_count.to_i} downloaded", "#{@skipped_count.to_i} skipped"]
         parts << "#{@failed_count} failed" if @failed_count.positive?
-        @stderr.puts dratools_message("#{Dratools::NAME} #{command_name}: #{parts.join(', ')}")
+        @stderr.puts dratools_message("#{command_name}: #{parts.join(', ')}")
       end
 
       def save_one_download(accession, download)
