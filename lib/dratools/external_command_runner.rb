@@ -172,9 +172,37 @@ module Dratools
 
     def executable_command?(command_name)
       ENV.fetch('PATH', '').split(File::PATH_SEPARATOR).any? do |directory|
-        command_path = File.join(directory, command_name)
-        File.file?(command_path) && File.executable?(command_path)
+        command_candidates_for(command_name).any? do |candidate|
+          command_path = File.join(directory, candidate)
+          executable_file?(command_path)
+        end
       end
+    end
+
+    def executable_file?(command_path)
+      return File.file?(command_path) if windows_platform?
+
+      File.file?(command_path) && File.executable?(command_path)
+    end
+
+    def command_candidates_for(command_name)
+      return [command_name] unless windows_platform?
+      return [command_name] unless File.extname(command_name).empty?
+
+      windows_executable_extensions.map { |extension| "#{command_name}#{extension}" }.uniq
+    end
+
+    def windows_executable_extensions
+      pathext = ENV.fetch('PATHEXT', '')
+      extensions = pathext.split(';').map(&:strip).reject(&:empty?).map do |extension|
+        extension.start_with?('.') ? extension : ".#{extension}"
+      end
+      extensions = %w[.com .exe .bat .cmd] if extensions.empty?
+      extensions.map(&:downcase)
+    end
+
+    def windows_platform?
+      File::ALT_SEPARATOR == '\\'
     end
 
     def command_not_found_message

@@ -3,6 +3,14 @@
 require_relative 'test_helper'
 
 class ExternalCommandRunnerTest < Minitest::Test
+  class WindowsLikeRunner < Dratools::ExternalCommandRunner
+    private
+
+    def windows_platform?
+      true
+    end
+  end
+
   class FakeRunner < Dratools::ExternalCommandRunner
     attr_reader :commands
 
@@ -173,7 +181,8 @@ class ExternalCommandRunnerTest < Minitest::Test
     Dir.mktmpdir do |directory|
       curl_path = File.join(directory, 'curl')
       wget_path = File.join(directory, 'wget')
-      aria2c_path = File.join(directory, 'aria2c')
+      aria2c_name = File::ALT_SEPARATOR == '\\' ? 'aria2c.exe' : 'aria2c'
+      aria2c_path = File.join(directory, aria2c_name)
       File.write(curl_path, '')
       File.write(wget_path, '')
       File.write(aria2c_path, '')
@@ -201,6 +210,66 @@ class ExternalCommandRunnerTest < Minitest::Test
         'DRATOOLS_DOWNLOAD_COMMAND' => nil
       ) do
         assert_nil Dratools::ExternalCommandRunner.new.available_command
+      end
+    end
+  end
+
+  def test_auto_selection_finds_curl_exe_on_windows
+    Dir.mktmpdir do |directory|
+      curl_path = File.join(directory, 'curl.exe')
+      File.write(curl_path, '')
+
+      with_env(
+        'PATH' => directory,
+        'PATHEXT' => '.EXE;.CMD',
+        'DRATOOLS_DOWNLOAD_COMMAND' => nil
+      ) do
+        assert_equal 'curl', WindowsLikeRunner.new.available_command
+      end
+    end
+  end
+
+  def test_auto_selection_finds_wget_cmd_on_windows
+    Dir.mktmpdir do |directory|
+      wget_path = File.join(directory, 'wget.cmd')
+      File.write(wget_path, '')
+
+      with_env(
+        'PATH' => directory,
+        'PATHEXT' => '.EXE;.CMD',
+        'DRATOOLS_DOWNLOAD_COMMAND' => nil
+      ) do
+        assert_equal 'wget', WindowsLikeRunner.new.available_command
+      end
+    end
+  end
+
+  def test_windows_uses_default_pathext_when_missing
+    Dir.mktmpdir do |directory|
+      curl_path = File.join(directory, 'curl.exe')
+      File.write(curl_path, '')
+
+      with_env(
+        'PATH' => directory,
+        'PATHEXT' => nil,
+        'DRATOOLS_DOWNLOAD_COMMAND' => nil
+      ) do
+        assert_equal 'curl', WindowsLikeRunner.new.available_command
+      end
+    end
+  end
+
+  def test_windows_ignores_extensionless_command_file
+    Dir.mktmpdir do |directory|
+      curl_path = File.join(directory, 'curl')
+      File.write(curl_path, '')
+
+      with_env(
+        'PATH' => directory,
+        'PATHEXT' => '.EXE;.CMD',
+        'DRATOOLS_DOWNLOAD_COMMAND' => nil
+      ) do
+        assert_nil WindowsLikeRunner.new.available_command
       end
     end
   end

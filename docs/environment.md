@@ -28,6 +28,8 @@
 
 `DRATOOLS_DOWNLOAD_COMMAND` を指定しない場合は、`curl`, `wget` の順で PATH にあるものを使います。`aria2c` は自動探索しません。`aria2c` を使う場合は `DRATOOLS_DOWNLOAD_COMMAND=aria2c` を指定してください。指定した場合はそのコマンドだけを使います。見つからない場合は、別のコマンドへ自動では切り替えません。
 
+Windows では `PATHEXT` を使って実行ファイル拡張子を解決します。たとえば `curl.exe`, `wget.cmd` のような名前でも自動探索の対象になります。
+
 `DRATOOLS_DOWNLOAD_RETRY_COUNT` は、初回の試行を含まない「リトライ回数」です。`curl` にはそのまま渡します。`wget` と `aria2c` は総試行回数を受け取るため、内部で `リトライ回数 + 1` に変換します。
 
 ## 例
